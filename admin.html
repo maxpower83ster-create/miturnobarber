@@ -1,0 +1,1254 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Panel de Control | Dueño de Barbería</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .service-edit-row {
+      background: var(--bg-input);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      padding: 14px;
+      margin-bottom: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .service-edit-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .service-edit-actions {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+      padding-top: 10px;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .price-input-box {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .price-input-box input {
+      width: 90px;
+      background: #11141c;
+      border: 1.5px solid var(--primary);
+      color: var(--primary);
+      font-size: 16px;
+      font-weight: 800;
+      padding: 6px 8px;
+      border-radius: 6px;
+      text-align: right;
+      box-shadow: 0 0 8px var(--primary-light);
+    }
+    .accounting-box {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+    .accounting-card {
+      background: #111520;
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 12px;
+    }
+    .barber-commission-card {
+      background: var(--bg-input);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      padding: 14px;
+      margin-bottom: 12px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="header-top" style="border-bottom: 1px solid var(--border-color); background: var(--bg-card);">
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <div style="font-size: 24px;">💈</div>
+      <div>
+        <h1 style="font-size: 16px; font-weight: 800;" id="adminShopName">Casa Brava</h1>
+        <p style="font-size: 11px; color: var(--text-muted);">Panel del Dueño • Salto</p>
+      </div>
+    </div>
+    <div style="display: flex; gap: 8px;">
+      <button onclick="openQrPosterModal()" class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px; border-color: var(--primary); color: var(--primary);">🖨️ Cartel QR Mostrador</button>
+      <a href="client.html" target="_blank" class="btn btn-primary" style="padding: 6px 12px; font-size: 12px;">📱 Ver App Cliente</a>
+      <a href="index.html" class="btn-secondary">✕ Salir</a>
+    </div>
+  </header>
+
+  <div class="container">
+    
+    <!-- Pestañas del Panel -->
+    <div class="nav-tabs" style="margin-top: 10px;">
+      <button class="tab-btn active" onclick="switchAdminTab('tab-comisiones')">💵 Contabilidad y Comisiones</button>
+      <button class="tab-btn" onclick="switchAdminTab('tab-servicios')">✂️ Cortes y Precios</button>
+      <button class="tab-btn" onclick="switchAdminTab('tab-estilo')">🎨 Color Flúor, Textos y Fondo</button>
+      <button class="tab-btn" onclick="switchAdminTab('tab-turnos')">📅 Turnos del Día</button>
+      <button class="tab-btn" onclick="switchAdminTab('tab-tienda')">🛍️ Tienda de Productos</button>
+      <button class="tab-btn" onclick="switchAdminTab('tab-notificaciones')">🔔 Notificaciones WhatsApp</button>
+    </div>
+
+    <!-- PESTAÑA 1: CONTABILIDAD Y COMISIONES (0 A 100%) -->
+    <div id="tab-comisiones" class="tab-content">
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <h3 class="card-title">💵 Contabilidad General y Caja</h3>
+            <p style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">
+              Control automático de ingresos, pago a estilistas y ganancia neta para tu local.
+            </p>
+          </div>
+          <div style="display: flex; gap: 6px;">
+            <button class="btn btn-primary" style="font-size: 12px; padding: 4px 10px;" onclick="openLiquidationModal()">📄 Imprimir Liquidación</button>
+            <button class="btn btn-secondary" style="font-size: 12px; padding: 4px 8px;" onclick="renderAdminDashboard()">🔄 Actualizar</button>
+          </div>
+        </div>
+
+        <!-- Resumen Financiero del Local -->
+        <div class="accounting-box">
+          <div class="accounting-card" style="border-color: var(--primary);">
+            <div style="font-size: 11px; color: var(--text-muted);">Facturación Total Bruta</div>
+            <div style="font-size: 20px; font-weight: 800; color: var(--primary); margin-top: 2px;" id="accTotalGross">$ 0 UYU</div>
+          </div>
+          <div class="accounting-card" style="border-color: #3b82f6;">
+            <div style="font-size: 11px; color: var(--text-muted);">Comisiones a Pagar</div>
+            <div style="font-size: 20px; font-weight: 800; color: #60a5fa; margin-top: 2px;" id="accTotalBarbers">$ 0 UYU</div>
+          </div>
+          <div class="accounting-card" style="border-color: #10b981;">
+            <div style="font-size: 11px; color: var(--text-muted);">Ganancia Neta del Local</div>
+            <div style="font-size: 20px; font-weight: 800; color: #34d399; margin-top: 2px;" id="accTotalNet">$ 0 UYU</div>
+          </div>
+        </div>
+
+        <h4 style="font-size: 14px; font-weight: 700; color: #fff; margin-bottom: 10px;">
+          👥 Estilistas: Configurar Porcentaje (0% a 100%) y Liquidación
+        </h4>
+
+        <!-- Lista de Estilistas con Porcentaje Editable -->
+        <div id="commissionsList">
+          <!-- Estilistas dinámicos -->
+        </div>
+      </div>
+    </div>
+
+    <!-- PESTAÑA 2: MODIFICAR CORTES Y PRECIOS -->
+    <div id="tab-servicios" class="tab-content" style="display: none;">
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <h3 class="card-title">✂️ Modificar Cortes y Precios</h3>
+            <p style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">
+              Cambia el precio de cualquier corte aquí. Se actualiza inmediatamente en el celular del cliente.
+            </p>
+          </div>
+          <button class="btn btn-primary" onclick="openAddServiceModal()" style="font-size: 12px; padding: 6px 12px;">
+            + Nuevo Corte
+          </button>
+        </div>
+
+        <!-- Lista Interactiva de Edición de Cortes -->
+        <div id="adminServicesList">
+          <!-- Servicios dinámicos -->
+        </div>
+      </div>
+    </div>
+
+    <!-- PESTAÑA 3: COLOR FLÚOR, TEXTOS Y FOTO DE FONDO -->
+    <div id="tab-estilo" class="tab-content" style="display: none;">
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title">🎨 Color Flúor, Presentación y Fondo</h3>
+        </div>
+
+        <!-- SELECTOR DE COLORES FLÚOR CON RESPLANDOR NEÓN -->
+        <div style="background: var(--bg-input); border: 1px solid var(--border-gold); padding: 14px; border-radius: var(--radius-sm); margin-bottom: 18px;">
+          <label style="display: block; font-size: 13px; font-weight: 800; color: #fff; margin-bottom: 4px;">
+            ⚡ Elige el Color Flúor / Neón de tu Barbería:
+          </label>
+          <p style="font-size: 11px; color: var(--text-muted); margin-bottom: 10px;">
+            Haz clic en un color y mira cómo se transforma toda la app con resplandor neón:
+          </p>
+          <div class="fluor-palette-row" id="adminFluorPalette">
+            <!-- Botones de colores flúor generados por JS -->
+          </div>
+        </div>
+
+        <!-- Vista Previa de la Portada -->
+        <div class="hero-presentation" id="previewHeroBox" style="margin-bottom: 20px;">
+          <div class="hero-overlay"></div>
+          <div class="hero-content">
+            <div style="font-size: 10px; font-weight: 800; letter-spacing: 2px; color: var(--primary); text-transform: uppercase;" id="prevSub">
+              BARBERÍA & CLUB MASCULINO
+            </div>
+            <h1 id="prevTitleBox" style="font-size: 22px;">
+              <span id="prevTitlePart1">Tu estilo habla por ti.</span><br>
+              <span id="prevTitlePart2" style="color: var(--primary);">Defínelo con expertos.</span>
+            </h1>
+            <p id="prevTagline" style="font-size: 12px;">
+              Tradición en navaja, toalla caliente y los mejores degradés modernos de Salto.
+            </p>
+          </div>
+        </div>
+
+        <form onsubmit="handleSaveCustomization(event)">
+          <div class="form-group">
+            <label class="form-label">Nombre de tu Barbería:</label>
+            <input type="text" id="custName" class="form-input" required oninput="updateLivePreview()">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Subtítulo / Categoría (Insignia superior):</label>
+            <input type="text" id="custSubtitle" class="form-input" placeholder="Ej: BARBERÍA TRADICIONAL & MODERNA" required oninput="updateLivePreview()">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Titular Principal (Línea 1):</label>
+            <input type="text" id="custHeroTitle" class="form-input" placeholder="Ej: Tu estilo habla por ti." required oninput="updateLivePreview()">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Frase Destacada en Color Flúor (Línea 2):</label>
+            <input type="text" id="custHeroHighlight" class="form-input" placeholder="Ej: Defínelo con expertos." required oninput="updateLivePreview()">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Texto de Presentación / Eslogan:</label>
+            <textarea id="custTagline" class="form-input" rows="2" style="resize: vertical;" required oninput="updateLivePreview()"></textarea>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Dirección en Salto (Uruguay):</label>
+            <input type="text" id="custAddress" class="form-input" placeholder="Ej: Calle Uruguay 850, Salto" required>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">📱 Número de WhatsApp del Dueño (con código 598):</label>
+            <input type="tel" id="custPhone" class="form-input" placeholder="Ej: 59899123456" required>
+            <p style="font-size: 11px; color: var(--text-muted); margin-top: 3px;">
+              Aquí es donde recibirás los avisos de cada nuevo cliente que reserve.
+            </p>
+          </div>
+
+          <div class="form-group" style="margin-top: 14px; border-top: 1px solid var(--border-color); padding-top: 12px;">
+            <label class="form-label">📸 Foto de Fondo del Local (Tu Barbería):</label>
+            <input type="file" id="bgFileInput" class="form-input" accept="image/*" onchange="handleBgFileSelect(event)">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">O elige uno de estos fondos prediseñados:</label>
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 6px;">
+              <div onclick="selectPresetBg('https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=800&q=80')" 
+                   style="height: 55px; border-radius: 8px; background: url('https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=200&q=80') center/cover; cursor: pointer; border: 2px solid var(--border-gold);" title="Salón Vintage">
+              </div>
+              <div onclick="selectPresetBg('https://images.unsplash.com/photo-1585747860715-2ba37e788b70?w=800&q=80')" 
+                   style="height: 55px; border-radius: 8px; background: url('https://images.unsplash.com/photo-1585747860715-2ba37e788b70?w=200&q=80') center/cover; cursor: pointer; border: 2px solid var(--border-color);" title="Ladrillo y Madera">
+              </div>
+              <div onclick="selectPresetBg('https://images.unsplash.com/photo-1621605815971-fbc98d665033?w=800&q=80')" 
+                   style="height: 55px; border-radius: 8px; background: url('https://images.unsplash.com/photo-1621605815971-fbc98d665033?w=200&q=80') center/cover; cursor: pointer; border: 2px solid var(--border-color);" title="Sillón de Cuero">
+              </div>
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-block" style="margin-top: 16px; padding: 12px;">
+            💾 Guardar Estilo, Color Flúor y Fondo
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- PESTAÑA 4: TURNOS -->
+    <div id="tab-turnos" class="tab-content" style="display: none;">
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title">📅 Agenda y Turnos del Día</h3>
+          <button class="btn btn-secondary" style="padding: 4px 8px;" onclick="renderAdminDashboard()">🔄 Actualizar</button>
+        </div>
+        <div class="services-compact-list" id="appointmentsList">
+          <!-- Lista de citas dinámicas -->
+        </div>
+      </div>
+    </div>
+
+    <!-- PESTAÑA 5: NOTIFICACIONES DE RESERVAS (DUEÑO Y BARBERO) -->
+    <div id="tab-notificaciones" class="tab-content" style="display: none;">
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <h3 class="card-title">🔔 Notificaciones Automáticas de Reservas por WhatsApp</h3>
+            <p style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">
+              Configura a qué celular o WhatsApp llegan los avisos en el momento exacto en que un cliente reserva.
+            </p>
+          </div>
+        </div>
+
+        <!-- Selector de Modo de Notificación -->
+        <div style="background: var(--bg-input); border: 1px solid var(--border-gold); padding: 16px; border-radius: var(--radius-sm); margin-bottom: 20px;">
+          <label style="display: block; font-size: 13px; font-weight: 800; color: #fff; margin-bottom: 8px;">
+            📲 ¿Quién debe recibir el mensaje de confirmación de la reserva?
+          </label>
+          <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 10px;">
+            <label style="display: flex; align-items: flex-start; gap: 10px; cursor: pointer; background: #11141d; padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.06);">
+              <input type="radio" name="notifDest" value="both" id="notifBoth" style="margin-top: 3px; accent-color: var(--primary);" onchange="handleNotifPreferenceChange(this.value)">
+              <div>
+                <strong style="color: #fff; font-size: 14px;">👥 A Ambos: Al Dueño y al Barbero (Recomendado)</strong>
+                <p style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">
+                  El cliente puede avisar tanto a la administración de la barbería como al WhatsApp particular del barbero seleccionado.
+                </p>
+              </div>
+            </label>
+
+            <label style="display: flex; align-items: flex-start; gap: 10px; cursor: pointer; background: #11141d; padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.06);">
+              <input type="radio" name="notifDest" value="barber" id="notifBarber" style="margin-top: 3px; accent-color: var(--primary);" onchange="handleNotifPreferenceChange(this.value)">
+              <div>
+                <strong style="color: #60a5fa; font-size: 14px;">✂️ Solo al Barbero Elegido</strong>
+                <p style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">
+                  La reserva se envía directamente al celular del barbero que atiende el turno.
+                </p>
+              </div>
+            </label>
+
+            <label style="display: flex; align-items: flex-start; gap: 10px; cursor: pointer; background: #11141d; padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.06);">
+              <input type="radio" name="notifDest" value="owner" id="notifOwner" style="margin-top: 3px; accent-color: var(--primary);" onchange="handleNotifPreferenceChange(this.value)">
+              <div>
+                <strong style="color: var(--primary); font-size: 14px;">🏢 Solo al Dueño / Recepción</strong>
+                <p style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">
+                  Todas las reservas van centralizadas al WhatsApp oficial del local.
+                </p>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <!-- Celular del Dueño -->
+        <div class="form-group" style="background: var(--bg-input); border: 1px solid var(--border-color); padding: 14px; border-radius: var(--radius-sm); margin-bottom: 20px;">
+          <label class="form-label" style="font-size: 13px; font-weight: 700; color: #fff;">📱 Número de WhatsApp del Dueño / Local (Uruguay con 598):</label>
+          <div style="display: flex; gap: 8px; margin-top: 6px;">
+            <input type="tel" id="notifOwnerPhone" class="form-input" placeholder="Ej: 59899123456" style="flex: 1;">
+            <button class="btn btn-primary" onclick="saveOwnerNotificationPhone()" style="padding: 6px 14px; font-size: 12px;">✓ Guardar</button>
+            <button class="btn btn-secondary" onclick="sendTestNotification('owner')" style="padding: 6px 10px; font-size: 12px;" title="Probar envío">🔔 Probar</button>
+          </div>
+          <p style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">
+            Ejemplo: Si tu celular es 099 123 456, escribe <strong>59899123456</strong>.
+          </p>
+        </div>
+
+        <!-- Celulares de los Barberos -->
+        <div style="background: var(--bg-input); border: 1px solid var(--border-color); padding: 14px; border-radius: var(--radius-sm);">
+          <h4 style="font-size: 13px; font-weight: 700; color: #fff; margin-bottom: 8px;">
+            ✂️ Celulares de WhatsApp de cada Barbero:
+          </h4>
+          <p style="font-size: 11px; color: var(--text-muted); margin-bottom: 12px;">
+            Configura el celular de cada profesional para que reciba sus propios turnos en su WhatsApp:
+          </p>
+          <div id="notifBarbersList">
+            <!-- Lista dinámica de barberos con inputs de teléfono -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PESTAÑA 6: TIENDA DE PRODUCTOS (POMADAS, ACEITES, CERAS) -->
+    <div id="tab-tienda" class="tab-content" style="display: none;">
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <h3 class="card-title">🛍️ Tienda de Productos & Cuidado Personal</h3>
+            <p style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">
+              Vende ceras, pomadas y aceites a tus clientes cuando reservan su corte para multiplicar tus ingresos.
+            </p>
+          </div>
+          <button class="btn btn-primary" onclick="openAddProductModal()" style="font-size: 12px; padding: 6px 12px;" id="btnNewProduct">
+            + Nuevo Producto
+          </button>
+        </div>
+
+        <div id="storeModuleLockNotice" style="display: none; background: #1a1710; border: 1.5px solid #ffd700; padding: 18px; border-radius: 10px; margin-bottom: 14px; text-align: center;">
+          <div style="font-size: 32px; margin-bottom: 6px;">🔒</div>
+          <h4 style="color: #ffd700; font-size: 15px; font-weight: 800; margin-bottom: 4px;">Módulo de Tienda Deshabilitado</h4>
+          <p style="font-size: 12px; color: var(--text-muted); max-width: 480px; margin: 0 auto 10px auto;">
+            Tu barbería tiene asignado el Plan Básico. Para activar la venta de pomadas y productos con tus turnos, solicita a BarberFlow el <strong>Plan Pro con Tienda</strong>.
+          </p>
+        </div>
+
+        <div id="adminProductsList">
+          <!-- Lista dinámica de productos -->
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Modal para Agregar Nuevo Producto a la Tienda -->
+  <div class="modal-overlay" id="addProductModal">
+    <div class="modal">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+        <h3 style="font-size: 16px; font-weight: bold; color: #fff;">🛍️ Agregar Producto a la Tienda</h3>
+        <button onclick="closeAddProductModal()" style="background: none; border: none; color: var(--text-muted); font-size: 18px; cursor: pointer;">✕</button>
+      </div>
+      <form onsubmit="handleCreateProduct(event)">
+        <div class="form-group">
+          <label class="form-label">Nombre del Producto:</label>
+          <input type="text" id="newProdName" class="form-input" placeholder="Ej: Pomada Matte Fijación Extra" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Precio de Venta ($ UYU):</label>
+          <input type="number" id="newProdPrice" class="form-input" placeholder="Ej: 350" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Descripción breve:</label>
+          <input type="text" id="newProdDesc" class="form-input" placeholder="Ej: Efecto mate sin brillo, fijación 24hs" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Foto del producto (URL):</label>
+          <input type="url" id="newProdPhoto" class="form-input" value="https://images.unsplash.com/photo-1597854710119-a6a4220b33b9?w=160&q=80">
+        </div>
+        <div style="display: flex; gap: 8px; margin-top: 16px;">
+          <button type="submit" class="btn btn-primary btn-block">Guardar Producto</button>
+          <button type="button" class="btn-secondary" style="padding: 10px;" onclick="closeAddProductModal()">Cancelar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal para Agregar Nuevo Corte -->
+  <div class="modal-overlay" id="addServiceModal">
+    <div class="modal">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+        <h3 style="font-size: 16px; font-weight: bold; color: #fff;">+ Agregar Nuevo Corte / Servicio</h3>
+        <button onclick="closeAddServiceModal()" style="background: none; border: none; color: var(--text-muted); font-size: 18px; cursor: pointer;">✕</button>
+      </div>
+      <form onsubmit="handleCreateService(event)">
+        <div class="form-group">
+          <label class="form-label">Nombre del Corte:</label>
+          <input type="text" id="newSrvName" class="form-input" placeholder="Ej: Corte Infantil o Platinado" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Precio en Pesos Uruguayos ($ UYU):</label>
+          <input type="number" id="newSrvPrice" class="form-input" placeholder="Ej: 400" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Duración estimada:</label>
+          <input type="text" id="newSrvDuration" class="form-input" value="30 min" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Descripción breve:</label>
+          <input type="text" id="newSrvDesc" class="form-input" placeholder="Ej: Corte moderno con peinado" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Foto del corte (Opcional):</label>
+          <input type="url" id="newSrvPhoto" class="form-input" value="https://images.unsplash.com/photo-1622286342621-4bd786c2447c?w=160&q=80">
+        </div>
+        <div class="form-group" style="display: flex; align-items: center; gap: 8px; margin-top: 10px; background: rgba(0, 255, 136, 0.08); padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border-gold);">
+          <input type="checkbox" id="newSrvIsPromo" style="width: 18px; height: 18px; accent-color: var(--primary);">
+          <label for="newSrvIsPromo" class="form-label" style="margin-bottom: 0; cursor: pointer; color: #fff; font-weight: 700;">
+            ⭐ Marcar como Destacado / Promoción Especial
+          </label>
+        </div>
+        <div style="display: flex; gap: 8px; margin-top: 16px;">
+          <button type="submit" class="btn btn-primary btn-block">Guardar Corte</button>
+          <button type="button" class="btn-secondary" style="padding: 10px;" onclick="closeAddServiceModal()">Cancelar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal Cartel QR Imprimible para Mostrador -->
+  <div class="modal-overlay" id="qrPosterModal">
+    <div class="modal" style="max-width: 440px; background: #0c0e14;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;" class="no-print">
+        <h3 style="font-size: 16px; font-weight: bold; color: #fff;">🖨️ Cartel QR para Mostrador / Espejo</h3>
+        <button onclick="closeQrPosterModal()" style="background: none; border: none; color: var(--text-muted); font-size: 18px; cursor: pointer;">✕</button>
+      </div>
+
+      <!-- Área Imprimible del Cartel -->
+      <div id="qrPosterWrapper">
+        <div class="qr-poster-preview" id="qrPosterContent">
+          <div style="font-size: 38px; margin-bottom: 4px;">💈</div>
+          <div class="qr-poster-title" id="qrShopTitle">Casa Brava</div>
+          <div class="qr-poster-sub" id="qrShopSub">BARBERÍA & CLUB MASCULINO</div>
+
+          <div class="qr-poster-box">
+            <img id="qrPosterImage" class="qr-poster-img" src="" alt="Código QR de Reserva">
+          </div>
+
+          <div class="qr-poster-cta">¡Agendá tu Turno en 20 Segundos!</div>
+          <p style="font-size: 12px; color: #64748b; margin-bottom: 10px;">
+            Sin llamadas ni esperas. Elige tu corte, barbero y horario.
+          </p>
+
+          <div class="qr-poster-steps">
+            <div>1. Apuntá tu cámara 📷</div>
+            <div>2. Elegí tu corte ✂️</div>
+            <div>3. ¡Listo! ✅</div>
+          </div>
+
+          <div style="font-size: 11px; color: #94a3b8; margin-top: 14px; font-weight: 600;" id="qrShopAddress">
+            Calle Uruguay 850, Salto
+          </div>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 8px; margin-top: 16px;" class="no-print">
+        <button type="button" class="btn btn-primary btn-block" onclick="printQrPoster()">
+          🖨️ Imprimir Cartel / Guardar PDF
+        </button>
+        <button type="button" class="btn-secondary" style="padding: 10px;" onclick="closeQrPosterModal()">
+          Cerrar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Comprobante Imprimible de Liquidación de Caja -->
+  <div class="modal-overlay" id="liquidationModal">
+    <div class="modal" style="max-width: 480px; background: #0c0e14;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;" class="no-print">
+        <h3 style="font-size: 16px; font-weight: bold; color: #fff;">📄 Liquidación de Caja y Comisiones</h3>
+        <button onclick="closeLiquidationModal()" style="background: none; border: none; color: var(--text-muted); font-size: 18px; cursor: pointer;">✕</button>
+      </div>
+
+      <!-- Contenido de Liquidación -->
+      <div id="liquidationWrapper">
+        <div style="background: #ffffff; color: #111827; padding: 24px; border-radius: 12px; font-family: 'Segoe UI', system-ui, sans-serif;" id="liquidationContent">
+          <div style="text-align: center; border-bottom: 2px solid #0f172a; padding-bottom: 12px; margin-bottom: 14px;">
+            <div style="font-size: 20px; font-weight: 900; text-transform: uppercase;" id="liqShopName">Casa Brava</div>
+            <div style="font-size: 12px; color: #64748b;" id="liqShopDate">Resumen de Liquidación de Barberos</div>
+          </div>
+
+          <div style="margin-bottom: 14px;">
+            <table style="width: 100%; font-size: 13px; border-collapse: collapse;">
+              <thead>
+                <tr style="border-bottom: 1px solid #cbd5e1; text-align: left;">
+                  <th style="padding: 6px 0;">Estilista</th>
+                  <th style="padding: 6px 0; text-align: center;">Cortes</th>
+                  <th style="padding: 6px 0; text-align: center;">% Com.</th>
+                  <th style="padding: 6px 0; text-align: right;">A Pagar</th>
+                </tr>
+              </thead>
+              <tbody id="liqBarbersTable">
+                <!-- Filas dinámicas -->
+              </tbody>
+            </table>
+          </div>
+
+          <div style="border-top: 2px dashed #cbd5e1; padding-top: 12px; font-size: 13px;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+              <span>Total Recaudado (Bruto):</span>
+              <strong id="liqTotalGross">$ 0</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 4px; color: #2563eb;">
+              <span>Total Comisiones a Barberos:</span>
+              <strong id="liqTotalBarbers">$ 0</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between; font-size: 15px; font-weight: 900; color: #059669; border-top: 1px solid #cbd5e1; padding-top: 6px; margin-top: 6px;">
+              <span>Ganancia Neta Local:</span>
+              <strong id="liqTotalNet">$ 0</strong>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 8px; margin-top: 16px;" class="no-print">
+        <button type="button" class="btn btn-primary btn-block" onclick="printLiquidation()">
+          🖨️ Imprimir Liquidación / PDF
+        </button>
+        <button type="button" class="btn-secondary" style="padding: 10px;" onclick="closeLiquidationModal()">
+          Cerrar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+  <script>
+    let shop = null;
+    let currentBgImage = '';
+    let selectedBrandColor = '#00ff88';
+
+    function renderAdminDashboard() {
+      try {
+        shop = getActiveShop();
+        selectedBrandColor = shop.brandColor || '#00ff88';
+        currentBgImage = shop.bgImage || 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=800&q=80';
+        
+        // Aplicar color flúor inmediatamente
+        applyShopFluorTheme(shop);
+
+        document.getElementById('adminShopName').innerText = shop.name;
+
+        // Formulario de textos
+        document.getElementById('custName').value = shop.name;
+        document.getElementById('custSubtitle').value = shop.subtitle || 'BARBERÍA & CLUB MASCULINO';
+        document.getElementById('custHeroTitle').value = shop.heroTitle || 'Tu estilo habla por ti.';
+        document.getElementById('custHeroHighlight').value = shop.heroHighlight || 'Defínelo con expertos.';
+        document.getElementById('custTagline').value = shop.tagline || 'Tradición en navaja y toalla caliente.';
+        document.getElementById('custAddress').value = shop.address || 'Salto, Uruguay';
+        document.getElementById('custPhone').value = shop.phone || '59899123456';
+
+        // Renderizar paleta de colores flúor
+        renderFluorPalette();
+
+        updateLivePreview();
+
+        // Turnos y finanzas
+        const appointments = getAppointments(shop.id);
+        
+        // Renderizar Contabilidad y Comisiones con porcentaje 0 a 100%
+        renderAccountingAndCommissions(appointments);
+
+        // Renderizar Cortes y Precios
+        renderAdminServicesEditor();
+
+        // Renderizar Notificaciones WhatsApp
+        renderNotificationsTab();
+
+        // Renderizar Tienda de Productos
+        renderAdminProducts();
+
+        // Renderizar turnos
+        renderAppointmentsList(appointments);
+
+      } catch (err) {
+        console.error('Error renderizando panel:', err);
+      }
+    }
+
+    // CONTABILIDAD Y COMISIONES (0 A 100%)
+    function renderAccountingAndCommissions(appointments) {
+      let totalGross = 0;
+      let totalBarbers = 0;
+
+      // Calcular comisiones de cada barbero
+      const commList = document.getElementById('commissionsList');
+      commList.innerHTML = (shop.barbers || []).map(b => {
+        const bApts = appointments.filter(a => a.barberId === b.id);
+        const bTotal = bApts.reduce((s, a) => s + Number(a.price || 0), 0);
+        
+        // Porcentaje actual del barbero (0 a 100%)
+        const currentPct = Math.round((b.commissionRate !== undefined ? b.commissionRate : 0.50) * 100);
+        const bCut = bTotal * (currentPct / 100);
+        const sCut = bTotal - bCut;
+        const dayOffVal = (b.daysOff && b.daysOff.length > 0) ? b.daysOff[0] : -1;
+
+        totalGross += bTotal;
+        totalBarbers += bCut;
+
+        return `
+          <div class="barber-commission-card">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <img src="${b.photo}" style="width: 44px; height: 44px; border-radius: 50%; object-fit: cover; border: 1.5px solid var(--primary);">
+                <div>
+                  <div style="font-size: 14px; font-weight: 700; color: #fff;">${b.name}</div>
+                  <div style="font-size: 11px; color: var(--primary); font-weight: 600;">${b.role}</div>
+                </div>
+              </div>
+              <div style="text-align: right;">
+                <div style="font-size: 11px; color: var(--text-muted);">Cortes: ${bApts.length}</div>
+                <div style="font-size: 14px; font-weight: 800; color: #fff;">${formatMoneyUY(bTotal)}</div>
+              </div>
+            </div>
+
+            <!-- Selector / Input de Porcentaje del 0 al 100% -->
+            <div style="background: #12151e; padding: 8px 12px; border-radius: 8px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; border: 1px solid rgba(255,255,255,0.06);">
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <span style="font-size: 12px; color: var(--text-muted);">Comisión pactada:</span>
+                <input type="number" id="comm-input-${b.id}" min="0" max="100" value="${currentPct}" 
+                       style="width: 55px; background: #0c0e12; border: 1px solid var(--primary); color: var(--primary); font-weight: 800; text-align: center; border-radius: 4px; padding: 4px;">
+                <span style="font-weight: 800; color: var(--primary);">%</span>
+                <button class="btn btn-primary" style="padding: 4px 8px; font-size: 11px;" onclick="saveBarberPct('${b.id}')">
+                  ✓ Guardar %
+                </button>
+              </div>
+
+              <div style="display: flex; gap: 14px; font-size: 12px;">
+                <div>A pagarle: <strong style="color: #60a5fa;">${formatMoneyUY(bCut)}</strong></div>
+                <div>Queda al local: <strong style="color: #34d399;">${formatMoneyUY(sCut)}</strong></div>
+              </div>
+            </div>
+
+            <!-- Selector de Día de Descanso Semanal y Celular de WhatsApp -->
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 8px; font-size: 12px; color: var(--text-muted); border-top: 1px solid rgba(255,255,255,0.05); padding-top: 8px; flex-wrap: wrap;">
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <span>🏖️ Día libre:</span>
+                <select class="form-select" style="width: auto; padding: 3px 8px; font-size: 11px;" onchange="saveBarberDayOff('${b.id}', this.value)">
+                  <option value="-1" ${dayOffVal === -1 ? 'selected' : ''}>Ninguno (Trabaja todos los días)</option>
+                  <option value="0" ${dayOffVal === 0 ? 'selected' : ''}>Domingo libre</option>
+                  <option value="1" ${dayOffVal === 1 ? 'selected' : ''}>Lunes libre</option>
+                  <option value="2" ${dayOffVal === 2 ? 'selected' : ''}>Martes libre</option>
+                  <option value="3" ${dayOffVal === 3 ? 'selected' : ''}>Miércoles libre</option>
+                  <option value="4" ${dayOffVal === 4 ? 'selected' : ''}>Jueves libre</option>
+                  <option value="5" ${dayOffVal === 5 ? 'selected' : ''}>Viernes libre</option>
+                  <option value="6" ${dayOffVal === 6 ? 'selected' : ''}>Sábado libre</option>
+                </select>
+              </div>
+
+              <div style="display: flex; align-items: center; gap: 4px;">
+                <span>📱 WhatsApp:</span>
+                <input type="tel" id="comm-phone-${b.id}" value="${b.phone || ''}" placeholder="Ej: 598..." 
+                       style="width: 110px; background: #0c0e12; border: 1px solid var(--border-color); color: #fff; border-radius: 4px; padding: 3px 6px; font-size: 11px;">
+                <button class="btn btn-secondary" style="padding: 3px 8px; font-size: 10px;" onclick="saveBarberPhoneFromComm('${b.id}')">✓</button>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      const totalNet = totalGross - totalBarbers;
+
+      document.getElementById('accTotalGross').innerText = formatMoneyUY(totalGross);
+      document.getElementById('accTotalBarbers').innerText = formatMoneyUY(totalBarbers);
+      document.getElementById('accTotalNet').innerText = formatMoneyUY(totalNet);
+    }
+
+    // Guardar nuevo porcentaje para un estilista (0 al 100%)
+    function saveBarberPct(barberId) {
+      const input = document.getElementById(`comm-input-${barberId}`);
+      const val = Number(input.value);
+      if (isNaN(val) || val < 0 || val > 100) {
+        alert('Por favor ingresa un porcentaje válido entre 0% y 100%.');
+        return;
+      }
+
+      updateBarberCommission(shop.id, barberId, val);
+      renderAdminDashboard();
+      alert(`¡Porcentaje actualizado al ${val}% con éxito!`);
+    }
+
+    // Guardar día de descanso semanal
+    function saveBarberDayOff(barberId, val) {
+      const dayNum = Number(val);
+      const daysOff = dayNum === -1 ? [] : [dayNum];
+      updateBarberDaysOff(shop.id, barberId, daysOff);
+      const dayNames = ['Domingos', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábados'];
+      const msg = dayNum === -1 ? 'Sin día libre asignado.' : `Día libre asignado a los ${dayNames[dayNum]}.`;
+      alert(`¡Día de descanso actualizado! ${msg}`);
+      renderAdminDashboard();
+    }
+
+    function renderFluorPalette() {
+      const palette = document.getElementById('adminFluorPalette');
+      palette.innerHTML = FLUOR_THEMES.map(t => `
+        <div class="fluor-color-btn ${t.color.toLowerCase() === selectedBrandColor.toLowerCase() ? 'active' : ''}" 
+             style="background: ${t.color}; box-shadow: 0 0 12px ${t.glow};"
+             title="${t.name}"
+             onclick="selectFluorTheme('${t.color}')">
+        </div>
+      `).join('');
+    }
+
+    function selectFluorTheme(colorHex) {
+      selectedBrandColor = colorHex;
+      shop.brandColor = colorHex;
+      applyShopFluorTheme(shop);
+      renderFluorPalette();
+      updateLivePreview();
+      updateShopFluorColor(shop.id, colorHex);
+    }
+
+    function renderAdminServicesEditor() {
+      const srvList = document.getElementById('adminServicesList');
+      if (!shop.services || shop.services.length === 0) {
+        srvList.innerHTML = `<div style="text-align: center; color: var(--text-muted); padding: 20px;">No hay cortes agregados. Haz clic en "+ Nuevo Corte".</div>`;
+        return;
+      }
+
+      srvList.innerHTML = shop.services.map(s => `
+        <div class="service-edit-row ${s.isPromo ? 'is-promo' : ''}">
+          <div class="service-edit-header">
+            <img src="${s.photo}" class="service-compact-thumb" alt="${s.name}">
+            <div style="flex: 1; min-width: 0;">
+              <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                <div style="font-size: 14px; font-weight: 700; color: #fff;">${s.name}</div>
+                ${s.isPromo ? '<span class="service-promo-badge">🔥 DESTACADO / PROMO</span>' : ''}
+              </div>
+              <div style="font-size: 11px; color: var(--text-muted);">${s.desc}</div>
+              <div style="font-size: 11px; color: var(--primary); font-weight: 600; margin-top: 2px;">⏱️ ${s.duration}</div>
+            </div>
+          </div>
+          
+          <div class="service-edit-actions">
+            <div class="price-input-box">
+              <span style="font-size: 12px; color: var(--text-muted);">Precio ($):</span>
+              <input type="number" id="price-input-${s.id}" value="${s.price}">
+              <button class="btn btn-primary" style="padding: 6px 10px; font-size: 12px;" onclick="saveServicePrice('${s.id}')">
+                ✓ Guardar
+              </button>
+            </div>
+            
+            <div style="display: flex; gap: 6px;">
+              <button class="btn ${s.isPromo ? 'btn-primary' : 'btn-secondary'}" 
+                      style="padding: 6px 10px; font-size: 12px;" 
+                      onclick="handleTogglePromo('${s.id}')">
+                ${s.isPromo ? '⭐ Quitar Promo' : '☆ Marcar Promo'}
+              </button>
+
+              <button class="btn btn-secondary" style="color: #ff5555; padding: 6px 10px; font-size: 12px;" onclick="handleDeleteService('${s.id}')">
+                🗑️
+              </button>
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function handleTogglePromo(serviceId) {
+      toggleServicePromo(shop.id, serviceId);
+      renderAdminDashboard();
+    }
+
+    function saveServicePrice(serviceId) {
+      const input = document.getElementById(`price-input-${serviceId}`);
+      const newPrice = Number(input.value);
+      if (isNaN(newPrice) || newPrice <= 0) {
+        alert('Por favor ingresa un precio válido en Pesos Uruguayos.');
+        return;
+      }
+
+      updateServicePrice(shop.id, serviceId, newPrice);
+      renderAdminDashboard();
+      alert(`¡Precio guardado! Ahora este corte cuesta $ ${newPrice} UYU en la app del cliente.`);
+    }
+
+    function handleDeleteService(serviceId) {
+      if (confirm('¿Estás seguro de que deseas eliminar este corte de la lista?')) {
+        deleteService(shop.id, serviceId);
+        renderAdminDashboard();
+      }
+    }
+
+    function openAddServiceModal() {
+      document.getElementById('addServiceModal').classList.add('active');
+    }
+    function closeAddServiceModal() {
+      document.getElementById('addServiceModal').classList.remove('active');
+    }
+
+    function handleCreateService(e) {
+      e.preventDefault();
+      const name = document.getElementById('newSrvName').value.trim();
+      const price = Number(document.getElementById('newSrvPrice').value);
+      const duration = document.getElementById('newSrvDuration').value.trim();
+      const desc = document.getElementById('newSrvDesc').value.trim();
+      const photo = document.getElementById('newSrvPhoto').value.trim();
+      const isPromo = document.getElementById('newSrvIsPromo').checked;
+
+      addNewService(shop.id, {
+        name: name,
+        price: price,
+        duration: duration,
+        desc: desc,
+        photo: photo || 'https://images.unsplash.com/photo-1622286342621-4bd786c2447c?w=160&q=80',
+        isPromo: isPromo
+      });
+
+      closeAddServiceModal();
+      document.getElementById('newSrvName').value = '';
+      document.getElementById('newSrvPrice').value = '';
+      document.getElementById('newSrvIsPromo').checked = false;
+      renderAdminDashboard();
+      alert(`¡Nuevo corte "${name}" agregado con éxito por $ ${price} UYU!`);
+    }
+
+    // GESTIÓN DEL CARTEL QR IMPRIMIBLE
+    function openQrPosterModal() {
+      const modal = document.getElementById('qrPosterModal');
+      const url = getShopBookingUrl(shop.id);
+      document.getElementById('qrShopTitle').innerText = shop.name;
+      document.getElementById('qrShopSub').innerText = shop.subtitle || 'BARBERÍA & CLUB MASCULINO';
+      document.getElementById('qrShopAddress').innerText = shop.address || 'Salto, Uruguay';
+      
+      const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=320x320&data=${encodeURIComponent(url)}&margin=10`;
+      document.getElementById('qrPosterImage').src = qrApiUrl;
+      document.getElementById('qrPosterContent').style.borderColor = selectedBrandColor;
+      
+      modal.classList.add('active');
+    }
+
+    function closeQrPosterModal() {
+      document.getElementById('qrPosterModal').classList.remove('active');
+    }
+
+    function printQrPoster() {
+      const content = document.getElementById('qrPosterContent');
+      content.classList.add('print-active');
+      window.print();
+      content.classList.remove('print-active');
+    }
+
+    // GESTIÓN DE LA LIQUIDACIÓN IMPRIMIBLE
+    function openLiquidationModal() {
+      const modal = document.getElementById('liquidationModal');
+      const appointments = getAppointments(shop.id);
+      let totalGross = 0;
+      let totalBarbers = 0;
+
+      document.getElementById('liqShopName').innerText = shop.name;
+      document.getElementById('liqShopDate').innerText = `Liquidación emitida el ${new Date().toLocaleDateString('es-UY')}`;
+
+      const tableEl = document.getElementById('liqBarbersTable');
+      tableEl.innerHTML = (shop.barbers || []).map(b => {
+        const bApts = appointments.filter(a => a.barberId === b.id);
+        const bTotal = bApts.reduce((s, a) => s + Number(a.price || 0), 0);
+        const pct = Math.round((b.commissionRate !== undefined ? b.commissionRate : 0.50) * 100);
+        const bCut = bTotal * (pct / 100);
+        totalGross += bTotal;
+        totalBarbers += bCut;
+
+        return `
+          <tr style="border-bottom: 1px solid #f1f5f9;">
+            <td style="padding: 8px 0; font-weight: 700;">${b.name} <br><span style="font-size: 11px; color: #64748b; font-weight: normal;">${b.role}</span></td>
+            <td style="padding: 8px 0; text-align: center;">${bApts.length}</td>
+            <td style="padding: 8px 0; text-align: center; font-weight: 700;">${pct}%</td>
+            <td style="padding: 8px 0; text-align: right; font-weight: 800; color: #2563eb;">${formatMoneyUY(bCut)}</td>
+          </tr>
+        `;
+      }).join('');
+
+      const totalNet = totalGross - totalBarbers;
+      document.getElementById('liqTotalGross').innerText = formatMoneyUY(totalGross);
+      document.getElementById('liqTotalBarbers').innerText = formatMoneyUY(totalBarbers);
+      document.getElementById('liqTotalNet').innerText = formatMoneyUY(totalNet);
+
+      modal.classList.add('active');
+    }
+
+    function closeLiquidationModal() {
+      document.getElementById('liquidationModal').classList.remove('active');
+    }
+
+    function printLiquidation() {
+      const content = document.getElementById('liquidationContent');
+      content.classList.add('print-active');
+      window.print();
+      content.classList.remove('print-active');
+    }
+
+    function renderAppointmentsList(appointments) {
+      const aptListEl = document.getElementById('appointmentsList');
+      if (appointments.length === 0) {
+        aptListEl.innerHTML = `<div style="text-align: center; color: var(--text-muted); font-size: 13px; padding: 20px;">No hay turnos agendados aún.</div>`;
+      } else {
+        aptListEl.innerHTML = appointments.map(apt => {
+          const rawPhone = (apt.clientPhone || '').replace(/\D/g, '');
+          const waPhone = rawPhone.startsWith('0') ? '598' + rawPhone.slice(1) : (rawPhone.startsWith('598') ? rawPhone : '598' + rawPhone);
+          const reminderMsg = encodeURIComponent(`¡Hola ${apt.clientName}! Te recordamos tu turno de ${apt.serviceName} con ${apt.barberName} para el día ${apt.date} a las ${apt.time} hs en ${shop.name}. ¡Te esperamos! 💈`);
+
+          return `
+            <div class="service-compact-card" style="align-items: flex-start;">
+              <div class="service-compact-info" style="flex: 1;">
+                <div class="service-compact-name">${apt.clientName} (${apt.clientPhone})</div>
+                <div class="service-compact-desc">✂️ ${apt.serviceName} con <strong>${apt.barberName}</strong></div>
+                <div class="service-compact-duration">📅 ${apt.date} • ⏰ ${apt.time} hs</div>
+                <div style="margin-top: 8px;">
+                  <a href="https://wa.me/${waPhone}?text=${reminderMsg}" target="_blank" class="btn" style="background: rgba(37,211,102,0.15); border: 1px solid #25D366; color: #25D366; padding: 5px 10px; font-size: 11px; border-radius: 6px; text-decoration: none; display: inline-flex; align-items: center; gap: 5px;">
+                    💬 Enviar Recordatorio por WhatsApp
+                  </a>
+                </div>
+              </div>
+              <div class="service-compact-price" style="font-size: 16px;">${formatMoneyUY(apt.price)}</div>
+            </div>
+          `;
+        }).join('');
+      }
+    }
+
+    function updateLivePreview() {
+      document.getElementById('prevSub').innerText = document.getElementById('custSubtitle').value;
+      document.getElementById('prevTitlePart1').innerText = document.getElementById('custHeroTitle').value;
+      document.getElementById('prevTitlePart2').innerText = document.getElementById('custHeroHighlight').value;
+      document.getElementById('prevTagline').innerText = document.getElementById('custTagline').value;
+
+      document.getElementById('previewHeroBox').style.backgroundImage = `url('${currentBgImage}')`;
+    }
+
+    function selectPresetBg(url) {
+      currentBgImage = url;
+      updateLivePreview();
+    }
+
+    function handleBgFileSelect(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        currentBgImage = evt.target.result;
+        updateLivePreview();
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function handleSaveCustomization(e) {
+      e.preventDefault();
+      const data = {
+        name: document.getElementById('custName').value.trim(),
+        subtitle: document.getElementById('custSubtitle').value.trim(),
+        heroTitle: document.getElementById('custHeroTitle').value.trim(),
+        heroHighlight: document.getElementById('custHeroHighlight').value.trim(),
+        tagline: document.getElementById('custTagline').value.trim(),
+        address: document.getElementById('custAddress').value.trim(),
+        phone: document.getElementById('custPhone').value.trim(),
+        bgImage: currentBgImage,
+        brandColor: selectedBrandColor
+      };
+      updateShopCustomization(shop.id, data);
+      renderAdminDashboard();
+      alert('¡Estilo, color flúor, textos, teléfono y foto de fondo guardados con éxito!');
+    }
+
+    function switchAdminTab(tabId) {
+      document.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none');
+      document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+      document.getElementById(tabId).style.display = 'block';
+      event.target.classList.add('active');
+    }
+
+    // =========================================================================
+    // GESTIÓN DE NOTIFICACIONES POR WHATSAPP (DUEÑO Y BARBERO)
+    // =========================================================================
+
+    function renderNotificationsTab() {
+      const pref = shop.notificationPreference || 'both';
+      if (document.getElementById('notifBoth')) {
+        document.getElementById('notifBoth').checked = (pref === 'both');
+        document.getElementById('notifBarber').checked = (pref === 'barber');
+        document.getElementById('notifOwner').checked = (pref === 'owner');
+      }
+
+      const ownerInput = document.getElementById('notifOwnerPhone');
+      if (ownerInput) {
+        ownerInput.value = shop.phone || '59899123456';
+      }
+
+      const listEl = document.getElementById('notifBarbersList');
+      if (listEl) {
+        listEl.innerHTML = (shop.barbers || []).map(b => `
+          <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; background: #12151e; padding: 12px; border-radius: 8px; margin-bottom: 10px; border: 1px solid rgba(255,255,255,0.06);">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <img src="${b.photo}" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 1.5px solid var(--primary);">
+              <div>
+                <div style="font-weight: 700; color: #fff; font-size: 13px;">${b.name}</div>
+                <div style="font-size: 11px; color: var(--primary); font-weight: 600;">${b.role}</div>
+              </div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+              <input type="tel" id="notif-barber-phone-${b.id}" value="${b.phone || ''}" placeholder="Ej: 59899111222" 
+                     style="width: 140px; background: #0c0e12; border: 1px solid var(--border-color); color: #fff; border-radius: 6px; padding: 6px 8px; font-size: 12px;">
+              <button class="btn btn-primary" style="padding: 6px 10px; font-size: 11px;" onclick="saveBarberNotificationPhone('${b.id}')">
+                ✓ Guardar
+              </button>
+              <button class="btn btn-secondary" style="padding: 6px 8px; font-size: 11px;" onclick="sendTestNotification('barber', '${b.id}')" title="Probar mensaje de WhatsApp">
+                🔔 Probar
+              </button>
+            </div>
+          </div>
+        `).join('');
+      }
+    }
+
+    function handleNotifPreferenceChange(val) {
+      shop.notificationPreference = val;
+      updateNotificationSettings(shop.id, val, null);
+      const labels = {
+        both: 'A Ambos (Dueño y Barbero)',
+        barber: 'Solo al Barbero elegido',
+        owner: 'Solo al Dueño / Recepción'
+      };
+      alert(`¡Preferencia de Notificación guardada!\nAhora el cliente enviará las reservas a: ${labels[val] || val}`);
+    }
+
+    function saveOwnerNotificationPhone() {
+      const phone = document.getElementById('notifOwnerPhone').value.trim();
+      if (!phone) {
+        alert('Por favor escribe un número de WhatsApp válido.');
+        return;
+      }
+      shop.phone = phone;
+      updateNotificationSettings(shop.id, null, phone);
+      document.getElementById('custPhone').value = phone;
+      alert(`¡Número de WhatsApp del Dueño actualizado a: ${phone}!`);
+    }
+
+    function saveBarberNotificationPhone(barberId) {
+      const input = document.getElementById(`notif-barber-phone-${barberId}`);
+      const phone = input.value.trim();
+      if (!phone) {
+        alert('Por favor escribe un número de teléfono válido.');
+        return;
+      }
+      updateBarberPhone(shop.id, barberId, phone);
+      const b = (shop.barbers || []).find(barber => barber.id === barberId);
+      const bName = b ? b.name : 'el barbero';
+      alert(`¡Número de WhatsApp de ${bName} guardado con éxito (${phone})!`);
+      renderAdminDashboard();
+    }
+
+    function saveBarberPhoneFromComm(barberId) {
+      const input = document.getElementById(`comm-phone-${barberId}`);
+      const phone = input.value.trim();
+      if (!phone) {
+        alert('Por favor escribe un número de teléfono válido.');
+        return;
+      }
+      updateBarberPhone(shop.id, barberId, phone);
+      alert('¡Número de WhatsApp guardado con éxito!');
+      renderAdminDashboard();
+    }
+
+    function sendTestNotification(target, barberId = null) {
+      let phone = '';
+      let targetName = '';
+
+      if (target === 'owner') {
+        phone = document.getElementById('notifOwnerPhone').value.trim() || shop.phone;
+        targetName = 'Dueño (' + shop.name + ')';
+      } else {
+        const b = (shop.barbers || []).find(barber => barber.id === barberId);
+        phone = document.getElementById(`notif-barber-phone-${barberId}`) ? document.getElementById(`notif-barber-phone-${barberId}`).value.trim() : (b ? b.phone : '');
+        targetName = b ? b.name : 'Barbero';
+      }
+
+      if (!phone) {
+        alert('Por favor ingresa primero un número de WhatsApp.');
+        return;
+      }
+
+      const cleanPhone = phone.replace(/[^0-9]/g, '');
+      const waPhone = cleanPhone.startsWith('0') ? '598' + cleanPhone.slice(1) : (cleanPhone.startsWith('598') ? cleanPhone : '598' + cleanPhone);
+
+      const testMsg = encodeURIComponent(`🔔 *PRUEBA DE NOTIFICACIÓN - BarberFlow Salto*\n\n¡Hola ${targetName}! Este es un mensaje de prueba para verificar que recibes correctamente las reservas de tus clientes en tu WhatsApp personal.\n\n💈 Local: ${shop.name}\n✅ Estado: Notificaciones Activas y Conectadas.`);
+
+      window.open(`https://wa.me/${waPhone}?text=${testMsg}`, '_blank');
+    }
+
+    // =========================================================================
+    // GESTIÓN DE TIENDA Y PRODUCTOS DE BARBERÍA
+    // =========================================================================
+
+    function renderAdminProducts() {
+      const lockNotice = document.getElementById('storeModuleLockNotice');
+      const btnNew = document.getElementById('btnNewProduct');
+      const prodListEl = document.getElementById('adminProductsList');
+
+      if (shop.hasStore === false) {
+        lockNotice.style.display = 'block';
+        btnNew.style.display = 'none';
+        prodListEl.innerHTML = '';
+        return;
+      }
+
+      lockNotice.style.display = 'none';
+      btnNew.style.display = 'inline-block';
+
+      const products = shop.products || [];
+      if (products.length === 0) {
+        prodListEl.innerHTML = `<div style="text-align: center; color: var(--text-muted); padding: 20px;">No hay productos cargados en tu tienda. Haz clic en "+ Nuevo Producto".</div>`;
+        return;
+      }
+
+      prodListEl.innerHTML = products.map(p => `
+        <div class="service-edit-row" style="opacity: ${p.active ? '1' : '0.6'}; border-left: 3px solid ${p.active ? 'var(--primary)' : 'var(--text-muted)'};">
+          <div class="service-edit-header">
+            <img src="${p.photo}" class="service-compact-thumb" alt="${p.name}" style="border-radius: 8px;">
+            <div style="flex: 1; min-width: 0;">
+              <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                <div style="font-size: 14px; font-weight: 700; color: #fff;">${p.name}</div>
+                <span class="badge ${p.active ? 'badge-primary' : 'badge-secondary'}" style="font-size: 10px;">
+                  ${p.active ? '🟢 Disponible' : '⚪ Pausado'}
+                </span>
+              </div>
+              <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">${p.desc}</div>
+            </div>
+          </div>
+
+          <div class="service-edit-actions">
+            <div class="price-input-box">
+              <span style="font-size: 12px; color: var(--text-muted);">Precio ($):</span>
+              <input type="number" id="prod-price-input-${p.id}" value="${p.price}">
+              <button class="btn btn-primary" style="padding: 6px 10px; font-size: 12px;" onclick="saveProductPrice('${p.id}')">
+                ✓ Guardar
+              </button>
+            </div>
+
+            <div style="display: flex; gap: 6px;">
+              <button class="btn btn-secondary" style="padding: 6px 10px; font-size: 12px;" onclick="handleToggleProductActive('${p.id}')">
+                ${p.active ? 'Pausar' : 'Activar'}
+              </button>
+              <button class="btn btn-secondary" style="color: #ff5555; padding: 6px 10px; font-size: 12px;" onclick="handleDeleteProduct('${p.id}')">
+                🗑️
+              </button>
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function openAddProductModal() {
+      document.getElementById('addProductModal').classList.add('active');
+    }
+    function closeAddProductModal() {
+      document.getElementById('addProductModal').classList.remove('active');
+    }
+
+    function handleCreateProduct(e) {
+      e.preventDefault();
+      const name = document.getElementById('newProdName').value.trim();
+      const price = Number(document.getElementById('newProdPrice').value);
+      const desc = document.getElementById('newProdDesc').value.trim();
+      const photo = document.getElementById('newProdPhoto').value.trim();
+
+      addNewProduct(shop.id, {
+        name: name,
+        price: price,
+        desc: desc,
+        photo: photo || 'https://images.unsplash.com/photo-1597854710119-a6a4220b33b9?w=160&q=80',
+        active: true
+      });
+
+      closeAddProductModal();
+      document.getElementById('newProdName').value = '';
+      document.getElementById('newProdPrice').value = '';
+      document.getElementById('newProdDesc').value = '';
+      renderAdminDashboard();
+      alert(`¡Producto "${name}" agregado a tu tienda por $ ${price} UYU!`);
+    }
+
+    function saveProductPrice(productId) {
+      const input = document.getElementById(`prod-price-input-${productId}`);
+      const newPrice = Number(input.value);
+      if (isNaN(newPrice) || newPrice <= 0) {
+        alert('Por favor ingresa un precio válido en Pesos Uruguayos.');
+        return;
+      }
+      updateProductPrice(shop.id, productId, newPrice);
+      renderAdminDashboard();
+      alert(`¡Precio guardado! Ahora este producto cuesta $ ${newPrice} UYU.`);
+    }
+
+    function handleDeleteProduct(productId) {
+      if (confirm('¿Estás seguro de que deseas eliminar este producto de la tienda?')) {
+        deleteProduct(shop.id, productId);
+        renderAdminDashboard();
+      }
+    }
+
+    function handleToggleProductActive(productId) {
+      toggleProductActive(shop.id, productId);
+      renderAdminDashboard();
+    }
+
+    window.onload = renderAdminDashboard;
+  </script>
+</body>
+</html>

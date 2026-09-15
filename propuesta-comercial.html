@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Propuesta Comercial Exclusiva | BarberFlow Uruguay</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .hero-dossier {
+      background: linear-gradient(180deg, rgba(0, 255, 136, 0.08) 0%, rgba(13, 16, 23, 0.98) 100%),
+                  radial-gradient(circle at top, rgba(255, 215, 0, 0.15) 0%, transparent 60%);
+      border: 1px solid rgba(255, 215, 0, 0.25);
+      border-radius: var(--radius);
+      padding: 28px 18px;
+      text-align: center;
+      margin-top: 14px;
+      margin-bottom: 20px;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero-badge-world {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(255, 215, 0, 0.15);
+      border: 1px solid rgba(255, 215, 0, 0.4);
+      color: #ffd700;
+      font-size: 11px;
+      font-weight: 800;
+      padding: 4px 12px;
+      border-radius: 20px;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      margin-bottom: 12px;
+    }
+    .benefit-card {
+      background: var(--bg-input);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      padding: 16px;
+      margin-bottom: 12px;
+      display: flex;
+      gap: 14px;
+      align-items: flex-start;
+      transition: transform 0.2s, border-color 0.2s;
+    }
+    .benefit-card:hover {
+      border-color: var(--primary);
+    }
+    .benefit-icon {
+      font-size: 26px;
+      background: var(--primary-light);
+      border: 1px solid var(--border-gold);
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .pricing-table {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 14px;
+      margin: 18px 0;
+    }
+    @media(min-width: 768px) {
+      .pricing-table {
+        grid-template-columns: repeat(3, 1fr);
+      }
+    }
+    .plan-card {
+      background: var(--bg-card);
+      border: 1.5px solid var(--border-color);
+      border-radius: var(--radius);
+      padding: 20px;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .plan-card.featured {
+      border-color: var(--primary);
+      background: linear-gradient(145deg, #161a24 0%, #11141c 100%);
+      box-shadow: 0 0 25px rgba(0, 255, 136, 0.12);
+      transform: scale(1.02);
+    }
+    .plan-card.lifetime {
+      border-color: #ffd700;
+      background: linear-gradient(145deg, #1a1711 0%, #11141c 100%);
+      box-shadow: 0 0 25px rgba(255, 215, 0, 0.12);
+    }
+    .plan-popular-ribbon {
+      position: absolute;
+      top: -10px;
+      right: 14px;
+      background: var(--primary);
+      color: #000;
+      font-size: 10px;
+      font-weight: 900;
+      padding: 3px 10px;
+      border-radius: 20px;
+      letter-spacing: 0.5px;
+    }
+    .plan-basic-ribbon {
+      position: absolute;
+      top: -10px;
+      right: 14px;
+      background: rgba(255, 255, 255, 0.15);
+      color: #fff;
+      font-size: 10px;
+      font-weight: 800;
+      padding: 3px 10px;
+      border-radius: 20px;
+      letter-spacing: 0.5px;
+    }
+    .plan-gold-ribbon {
+      position: absolute;
+      top: -10px;
+      right: 14px;
+      background: #ffd700;
+      color: #000;
+      font-size: 10px;
+      font-weight: 900;
+      padding: 3px 10px;
+      border-radius: 20px;
+      letter-spacing: 0.5px;
+    }
+    .roi-highlight {
+      background: linear-gradient(135deg, rgba(0, 255, 136, 0.1) 0%, rgba(19, 22, 31, 0.95) 100%);
+      border: 1.5px solid var(--primary);
+      border-radius: var(--radius);
+      padding: 20px;
+      text-align: center;
+      margin: 20px 0;
+    }
+    .world-flag-pill {
+      display: inline-block;
+      font-size: 11px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      padding: 2px 8px;
+      border-radius: 12px;
+      color: var(--text-muted);
+      margin: 2px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header Comercial -->
+  <header class="header-top" style="border-bottom: 1px solid var(--border-color); background: var(--bg-card);">
+    <div style="display: flex; align-items: center; gap: 8px;">
+      <span style="font-size: 20px;">💈</span>
+      <span style="font-size: 14px; font-weight: 800; color: var(--primary); letter-spacing: 1px;">BARBERFLOW URUGUAY</span>
+    </div>
+    <a href="index.html" class="btn-secondary">✕ Salir</a>
+  </header>
+
+  <div class="container" style="max-width: 960px;">
+    
+    <!-- Portada Comercial de Presentación -->
+    <div class="hero-dossier">
+      <div class="hero-badge-world">
+        🌎 TECNOLOGÍA GLOBAL ADAPTADA A URUGUAY
+      </div>
+      <h1 style="font-size: 24px; line-height: 1.25; margin-bottom: 10px;">
+        La Plataforma de Élite que Duplica las Ganancias de tu Barbería
+      </h1>
+      <p style="font-size: 13px; color: var(--text-muted); line-height: 1.5; max-width: 520px; margin: 0 auto 14px auto;">
+        Analizamos los modelos de éxito de las barberías más rentables de <strong>EE.UU., Europa y Brasil</strong> y diseñamos el primer software uruguayo enfocado en 2 cosas: <strong style="color: #fff;">Ahorrarte tiempo y hacerte ganar más dinero.</strong>
+      </p>
+      <div>
+        <span class="world-flag-pill">🇺🇸 Estados Unidos (Squire)</span>
+        <span class="world-flag-pill">🇪🇸 España (Booksy)</span>
+        <span class="world-flag-pill">🇧🇷 Brasil (Trinks)</span>
+        <span class="world-flag-pill" style="color: var(--primary); border-color: var(--primary);">🇺🇾 Salto & Todo Uruguay (BarberFlow)</span>
+      </div>
+    </div>
+
+    <!-- Problemas Reales que Eliminamos -->
+    <div class="card" style="border-color: rgba(255, 51, 102, 0.35); background: rgba(255, 51, 102, 0.04);">
+      <h3 style="font-size: 13px; color: #ff5555; font-weight: 800; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">
+        🛑 Lo que hoy le está costando dinero a tu barbería:
+      </h3>
+      <ul style="font-size: 12px; color: var(--text-muted); padding-left: 18px; line-height: 1.6;">
+        <li><strong>Interrumpir cortes para contestar WhatsApp:</strong> pierdes concentración, tardas más y atiendes menos clientes por turno.</li>
+        <li><strong>Mensajes nocturnos sin responder:</strong> el cliente que escribe a las 23:00 hs si no recibe confirmación, busca otra barbería a la mañana siguiente.</li>
+        <li><strong>Superposición de horarios y clientes esperando parados</strong> que se van molestos.</li>
+        <li><strong>Calcular comisiones a mano:</strong> discusiones con los barberos al final del día y errores de caja.</li>
+        <li><strong>Depender solo del corte para ganar dinero:</strong> la mayoría de las barberías en Uruguay dejan sobre la mesa miles de pesos en productos que los clientes compran en farmacias o supermercados.</li>
+      </ul>
+    </div>
+
+    <!-- Las 5 Innovaciones Mundiales de BarberFlow -->
+    <div class="section-header" style="margin-top: 24px; margin-bottom: 12px;">
+      <div class="section-label" style="font-size: 12px; color: #ffd700;">
+        ⚡ LAS 5 INCLUSIONES ESTRATÉGICAS QUE HARÁN ÚNICA A TU BARBERÍA:
+      </div>
+    </div>
+
+    <!-- Innovación 1 -->
+    <div class="benefit-card">
+      <div class="benefit-icon">🛍️</div>
+      <div>
+        <h4 style="font-size: 14px; font-weight: 800; color: #fff; margin-bottom: 3px;">1. Tienda Online de Productos en el Agendamiento (Cross-Selling)</h4>
+        <p style="font-size: 12px; color: var(--text-muted); line-height: 1.4;">
+          Cuando el cliente reserva su turno, el sistema le sugiere con 1 toque agregar una pomada mate, cera o aceite de barba para retirar al llegar. <br>
+          <strong style="color: #ffd700;">Impacto económico:</strong> Si solo 1 de cada 4 clientes agrega un producto de $400, con 350 clientes al mes sumas <strong style="color: #fff;">+$35.000 UYU de facturación extra neta</strong> sin cortar un solo minuto más de pelo.
+        </p>
+      </div>
+    </div>
+
+    <!-- Innovación 2 -->
+    <div class="benefit-card">
+      <div class="benefit-icon">📲</div>
+      <div>
+        <h4 style="font-size: 14px; font-weight: 800; color: #fff; margin-bottom: 3px;">2. Reserva Automática en 15 Segundos por WhatsApp (Sin Descargar Apps)</h4>
+        <p style="font-size: 12px; color: var(--text-muted); line-height: 1.4;">
+          En Uruguay la gente odia descargar aplicaciones que llenan la memoria del celular. BarberFlow funciona directo en la web desde el link de tu Instagram, TikTok o escaneando un código QR en el mostrador. En 3 toques el turno queda listo y confirmado por WhatsApp directo a ti o a tu barbero.
+        </p>
+      </div>
+    </div>
+
+    <!-- Innovación 3 -->
+    <div class="benefit-card">
+      <div class="benefit-icon">📊</div>
+      <div>
+        <h4 style="font-size: 14px; font-weight: 800; color: #fff; margin-bottom: 3px;">3. Panel Contable y Comisiones de Estilistas (0% a 100%)</h4>
+        <p style="font-size: 12px; color: var(--text-muted); line-height: 1.4;">
+          Controla en tiempo real cuánto dinero ingresó en el día, qué barbero facturó más y la liquidación automática de comisiones configurada a tu medida (ej: 50% barbero / 50% dueño). Olvídate de cuadernos y calculadoras.
+        </p>
+      </div>
+    </div>
+
+    <!-- Innovación 4 -->
+    <div class="benefit-card">
+      <div class="benefit-icon">🎨</div>
+      <div>
+        <h4 style="font-size: 14px; font-weight: 800; color: #fff; margin-bottom: 3px;">4. Identidad Visual Propia: Fondo de tu Local & Colores Flúor</h4>
+        <p style="font-size: 12px; color: var(--text-muted); line-height: 1.4;">
+          Tu plataforma no parece una plantilla genérica. Puedes subir la foto de fachada o interior de tu barbería, tu logo, tus textos motivacionales y elegir entre 5 tonos flúor (Verde Neón, Dorado Oro, Cyan Cyber, Violeta Royal o Fuego Coral) para que tus clientes vivan una experiencia VIP.
+        </p>
+      </div>
+    </div>
+
+    <!-- Innovación 5 -->
+    <div class="benefit-card">
+      <div class="benefit-icon">👑</div>
+      <div>
+        <h4 style="font-size: 14px; font-weight: 800; color: #fff; margin-bottom: 3px;">5. Retención de Clientes & Promociones Destacadas</h4>
+        <p style="font-size: 12px; color: var(--text-muted); line-height: 1.4;">
+          Destaca tus combos estrella (ej: Corte + Barba + Bebida) con insignias de promoción para incentivar la venta del servicio más rentable. Recordatorios por WhatsApp que reducen las faltas un 85%.
+        </p>
+      </div>
+    </div>
+
+    <!-- Justificación Financiera ROI -->
+    <div class="roi-highlight">
+      <div style="font-size: 12px; font-weight: 800; color: var(--primary); text-transform: uppercase; letter-spacing: 1px;">
+        💰 EL RETORNO DE INVERSIÓN MÁS RÁPIDO DEL MERCADO
+      </div>
+      <div style="font-size: 26px; font-weight: 900; color: #fff; margin: 8px 0;">
+        Con solo 3 o 4 cortes al mes se paga sola
+      </div>
+      <p style="font-size: 13px; color: var(--text-muted); line-height: 1.5; max-width: 500px; margin: 0 auto;">
+        Si tu corte promedio es de $450 UYU, un fin de semana normal genera más de $30.000 UYU. BarberFlow no es un gasto, es el empleado digital más eficiente de tu negocio que trabaja 24 horas al día, los 7 días de la semana.
+      </p>
+    </div>
+
+    <!-- Planes y Modalidades Comerciales -->
+    <div class="section-header" style="margin-top: 24px; margin-bottom: 8px;">
+      <div class="section-label" style="font-size: 12px; color: #fff;">
+        🏷️ PLANES ACCESIBLES Y ADAPTADOS A TU ETAPA:
+      </div>
+    </div>
+
+    <div class="pricing-table">
+      <!-- 1. Plan Básico Mensual -->
+      <div class="plan-card">
+        <span class="plan-basic-ribbon">🌱 INICIAL</span>
+        <div>
+          <div style="font-size: 16px; font-weight: 800; color: #fff;">Plan Básico</div>
+          <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">Para empezar a organizar tu local</div>
+          <div style="font-size: 26px; font-weight: 900; color: #fff; margin-bottom: 14px;">
+            $ 1.200 <span style="font-size: 12px; font-weight: 400; color: var(--text-muted);">UYU / mes</span>
+          </div>
+          <ul style="font-size: 12px; color: var(--text-muted); padding-left: 16px; line-height: 1.7; margin-bottom: 18px;">
+            <li>✅ Turnos ilimitados por WhatsApp</li>
+            <li>✅ Hasta 3 estilistas / barberos</li>
+            <li>✅ Registro diario de ingresos</li>
+            <li>✅ Personalización básica con fotos</li>
+            <li>✅ Cero descargas para el cliente</li>
+            <li style="opacity: 0.5;">❌ Sin Tienda Online Cross-Selling</li>
+          </ul>
+        </div>
+        <a href="https://wa.me/59899123456?text=Hola%2C%20quiero%20empezar%20con%20el%20Plan%20B%C3%A1sico%20de%20%241.200%20de%20BarberFlow" target="_blank" class="btn-secondary" style="display: block; text-align: center; font-size: 13px; font-weight: 700;">
+          Elegir Plan Básico ➔
+        </a>
+      </div>
+
+      <!-- 2. Plan Pro Mensual -->
+      <div class="plan-card featured">
+        <span class="plan-popular-ribbon">⭐ EL MÁS ELEGIDO</span>
+        <div>
+          <div style="font-size: 16px; font-weight: 800; color: #fff;">Plan Pro + Tienda</div>
+          <div style="font-size: 12px; color: var(--primary); margin-bottom: 12px;">El favorito de los barberos rentables</div>
+          <div style="font-size: 26px; font-weight: 900; color: var(--primary); margin-bottom: 14px;">
+            $ 1.900 <span style="font-size: 12px; font-weight: 400; color: var(--text-muted);">UYU / mes</span>
+          </div>
+          <ul style="font-size: 12px; color: var(--text-muted); padding-left: 16px; line-height: 1.7; margin-bottom: 18px;">
+            <li>✅ Turnos ilimitados por WhatsApp</li>
+            <li>✅ <strong style="color: #ffd700;">Módulo de Tienda Online incluido</strong></li>
+            <li>✅ Hasta 5 estilistas / barberos</li>
+            <li>✅ Panel Contable & Comisiones (0% al 100%)</li>
+            <li>✅ Personalización completa y Colores Flúor</li>
+            <li>✅ Promociones destacadas en portada</li>
+            <li>✅ Servidor en la nube y copias continuas</li>
+          </ul>
+        </div>
+        <a href="https://wa.me/59899123456?text=Hola%2C%20quiero%20activar%20el%20Plan%20Pro%20de%20BarberFlow%20en%20mi%20barber%C3%ADa" target="_blank" class="btn-whatsapp" style="display: block; text-align: center; font-size: 13px;">
+          Activar Plan Pro ➔
+        </a>
+      </div>
+
+      <!-- 3. Plan Compra Definitiva -->
+      <div class="plan-card lifetime">
+        <span class="plan-gold-ribbon">🏆 COMPRA ÚNICA</span>
+        <div>
+          <div style="font-size: 16px; font-weight: 800; color: #ffd700;">Licencia Definitiva</div>
+          <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">Sé dueño de tu app (sin mensualidades)</div>
+          <div style="font-size: 26px; font-weight: 900; color: #ffd700; margin-bottom: 14px;">
+            $ 19.500 <span style="font-size: 12px; font-weight: 400; color: var(--text-muted);">UYU (Único)</span>
+          </div>
+          <ul style="font-size: 12px; color: var(--text-muted); padding-left: 16px; line-height: 1.7; margin-bottom: 18px;">
+            <li>👑 <strong style="color: #fff;">Propiedad permanente de tu app</strong></li>
+            <li>👑 Cero pagos mensuales para siempre</li>
+            <li>👑 Barberos y turnos ilimitados</li>
+            <li>👑 Tienda online cross-selling activa</li>
+            <li>👑 Instalación personalizada y puesta a punto</li>
+            <li>👑 1 año de garantía y soporte prioritario</li>
+          </ul>
+        </div>
+        <a href="https://wa.me/59899123456?text=Hola%2C%20me%20interesa%20la%20Licencia%20Definitiva%20de%20BarberFlow%20(compra%20%C3%BAnica)" target="_blank" class="btn" style="background: linear-gradient(135deg, #ffd700, #ffaa00); color: #000; font-weight: 800; display: block; text-align: center; font-size: 13px; border-radius: 8px; padding: 12px; text-decoration: none;">
+          Comprar Licencia Única ➔
+        </a>
+      </div>
+    </div>
+
+    <!-- Garantía y Soporte Local -->
+    <div class="card" style="text-align: center; margin-top: 14px; margin-bottom: 24px; border-color: rgba(0, 255, 136, 0.2);">
+      <div style="font-size: 32px; margin-bottom: 6px;">🤝</div>
+      <h3 style="font-size: 15px; color: #fff; font-weight: 800; margin-bottom: 6px;">
+        Puesta en Marcha en 24 Horas con Soporte Local
+      </h3>
+      <p style="font-size: 12px; color: var(--text-muted); line-height: 1.5; max-width: 480px; margin: 0 auto 16px auto;">
+        Nosotros cargamos tus cortes, tus precios, tus barberos y te entregamos los códigos QR listos para imprimir y colocar en tu local o en tus historias de Instagram.
+      </p>
+      <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+        <a href="client.html" class="btn-secondary" style="padding: 10px 18px; font-size: 13px;">
+          👀 Ver Demo Clientes
+        </a>
+        <a href="admin.html" class="btn-secondary" style="padding: 10px 18px; font-size: 13px;">
+          🔐 Ver Panel de Dueño
+        </a>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div style="text-align: center; padding: 16px 0; border-top: 1px solid var(--border-color); font-size: 11px; color: var(--text-muted); margin-bottom: 30px;">
+      Desarrollado en Salto para impulsar a los barberos y estilistas de todo el Uruguay 🇺🇾
+    </div>
+
+  </div>
+
+</body>
+</html>

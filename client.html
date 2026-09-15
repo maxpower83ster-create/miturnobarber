@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Casa Brava | Barbería & Club Masculino</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- Contenedor Celular -->
+  <div class="container container-sm">
+    
+    <!-- Encabezado Superior -->
+    <div class="header-top">
+      <div class="brand-badge">
+        <span>✂️</span> <span id="shopSubtitle">BARBERÍA & CLUB MASCULINO</span>
+      </div>
+      <a href="index.html" class="btn-secondary">✕ Salir</a>
+    </div>
+
+    <!-- Presentación con Foto de Fondo del Local y Textos Personalizados -->
+    <div class="hero-presentation" id="heroPresentationBox">
+      <div class="hero-overlay"></div>
+      <div class="hero-content">
+        <div style="font-size: 11px; font-weight: 800; letter-spacing: 2px; color: var(--primary); text-transform: uppercase;">
+          💈 BIENVENIDO A <span id="shopName">CASA BRAVA</span>
+        </div>
+        <h1 id="heroTitleElement">
+          <span id="heroTitlePart1">Tu estilo habla por ti.</span><br>
+          <span id="heroTitlePart2">Defínelo con expertos.</span>
+        </h1>
+        <p id="shopTagline">
+          Tradición en navaja, toalla caliente y los mejores degradés modernos de Salto.
+        </p>
+      </div>
+    </div>
+
+    <!-- Barra de Confianza Rápida -->
+    <div class="trust-bar">
+      <div class="trust-item">
+        <span>⭐</span> <strong>4.9 / 5</strong> (+120 opiniones)
+      </div>
+      <div class="trust-item">
+        <span>⏱️</span> <strong>Sin esperas</strong>
+      </div>
+      <div class="trust-item">
+        <span>📍</span> <span id="shopAddress">Salto, Uruguay</span>
+      </div>
+    </div>
+
+    <!-- Formulario de Reserva Rápido y Limpio -->
+    <form id="bookingForm" onsubmit="handleBooking(event)">
+      
+      <!-- Paso 1: Servicios con Fotos Compactas -->
+      <div class="card">
+        <div class="step-title">
+          <span class="step-number">1</span> Elige tu Servicio
+        </div>
+        <div class="services-compact-list" id="servicesGrid">
+          <!-- Servicios dinámicos -->
+        </div>
+      </div>
+
+      <!-- Paso 2: Barberos del Equipo -->
+      <div class="card">
+        <div class="step-title">
+          <span class="step-number">2</span> Elige a tu Barbero
+        </div>
+        <div class="barbers-compact-grid" id="barbersGrid">
+          <!-- Barberos dinámicos -->
+        </div>
+      </div>
+
+      <!-- Paso 3: Día y Horario -->
+      <div class="card">
+        <div class="step-title">
+          <span class="step-number">3</span> Día y Horario Disponible
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label">Día de la cita:</label>
+          <input type="date" id="bookingDate" class="form-input" required onchange="onDateOrBarberChange()">
+        </div>
+
+        <div id="barberDayOffAlert" style="display: none; background: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444; color: #fca5a5; padding: 10px 12px; border-radius: 8px; font-size: 12px; margin-bottom: 12px; line-height: 1.4;"></div>
+
+        <label class="form-label">Horarios disponibles hoy:</label>
+        <div class="time-slots" id="timeSlotsGrid">
+          <!-- Horarios automáticos -->
+        </div>
+      </div>
+
+      <!-- Paso Opcional: Productos & Cuidado Personal (Cross-Selling) -->
+      <div class="card" id="clientStoreCard" style="display: none; border-color: rgba(255, 215, 0, 0.3); background: linear-gradient(145deg, #161922 0%, #11141c 100%);">
+        <div style="display: flex; justify-content: space-between; align-items: center; cursor: pointer;" onclick="toggleClientStoreSection()">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <span style="font-size: 24px;">🛍️</span>
+            <div>
+              <div style="font-size: 14px; font-weight: 700; color: #fff;">¿Deseas agregar un producto a tu turno?</div>
+              <div style="font-size: 11px; color: #ffd700;">Pomadas, ceras y aceites para retirar al llegar (Opcional)</div>
+            </div>
+          </div>
+          <span style="font-size: 12px; color: var(--primary); font-weight: 800; white-space: nowrap;" id="toggleStoreBtnText">Ver Productos ▾</span>
+        </div>
+
+        <div id="clientStoreDrawer" style="display: none; margin-top: 14px; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 12px;">
+          <div class="services-compact-list" id="clientProductsGrid">
+            <!-- Productos dinámicos -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Paso 4: Datos del Cliente -->
+      <div class="card">
+        <div class="step-title">
+          <span class="step-number">4</span> Tus Datos de Contacto
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Nombre y Apellido:</label>
+          <input type="text" id="clientName" class="form-input" placeholder="Ej: Santiago Ramos" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Celular / WhatsApp:</label>
+          <input type="tel" id="clientPhone" class="form-input" placeholder="Ej: 099 123 456" required>
+        </div>
+      </div>
+
+      <!-- Botón WhatsApp de Confirmación -->
+      <button type="submit" class="btn-whatsapp" style="margin-bottom: 24px;">
+        📲 Confirmar Turno por WhatsApp
+      </button>
+
+    </form>
+
+  </div>
+
+  <!-- Modal de Confirmación Rápido -->
+  <div class="modal-overlay" id="successModal">
+    <div class="modal" style="text-align: center;">
+      <div style="font-size: 40px; margin-bottom: 8px;">🎉</div>
+      <h2 style="font-size: 18px; font-weight: bold; margin-bottom: 6px; color: #fff;">¡Turno Agendado con Éxito!</h2>
+      <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 18px; line-height: 1.4;" id="modalSummary">
+        Tu turno ha sido registrado en el sistema.
+      </p>
+      
+      <div style="display: flex; flex-direction: column; gap: 10px;" id="whatsappActionsContainer">
+        <!-- Botones dinámicos según preferencia del dueño (dueño, barbero, o ambos) -->
+        <a id="whatsappDirectLink" href="#" target="_blank" class="btn-whatsapp">
+          Abrir WhatsApp y Enviar ➔
+        </a>
+      </div>
+      <button type="button" class="btn-secondary" style="width: 100%; padding: 10px; margin-top: 10px;" onclick="closeModalAndReset()">
+        Hacer otra reserva
+      </button>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+  <script>
+    let currentShop = null;
+    let selectedService = null;
+    let selectedBarber = null;
+    let selectedTime = null;
+    let selectedProduct = null;
+
+    const DEFAULT_HOURS = ['09:00', '09:45', '10:30', '11:15', '14:00', '14:45', '15:30', '16:15', '17:00', '17:45', '18:30', '19:15'];
+    const DAY_NAMES = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+
+    function initClientPage() {
+      // Soporte para parámetro ?shop= en la URL (para códigos QR y enlaces directos)
+      const urlParams = new URLSearchParams(window.location.search);
+      const shopParam = urlParams.get('shop');
+      if (shopParam) {
+        setActiveShop(shopParam);
+      }
+
+      currentShop = getActiveShop();
+      selectedProduct = null;
+      
+      // Aplicar Color Flúor Dinámico elegido por el dueño
+      applyShopFluorTheme(currentShop);
+      
+      // Textos dinámicos del dueño
+      document.getElementById('shopName').innerText = currentShop.name;
+      document.getElementById('shopSubtitle').innerText = currentShop.subtitle || 'BARBERÍA & CLUB MASCULINO';
+      document.getElementById('heroTitlePart1').innerText = currentShop.heroTitle || 'Tu estilo habla por ti.';
+      document.getElementById('heroTitlePart2').innerText = currentShop.heroHighlight || 'Defínelo con expertos.';
+      document.getElementById('shopTagline').innerText = currentShop.tagline;
+      document.getElementById('shopAddress').innerText = currentShop.address;
+
+      // Foto de fondo de la barbería
+      const bg = currentShop.bgImage || 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=800&q=80';
+      document.getElementById('heroPresentationBox').style.backgroundImage = `url('${bg}')`;
+
+      // Poner fecha de hoy
+      const today = new Date().toISOString().split('T')[0];
+      const dateInput = document.getElementById('bookingDate');
+      dateInput.value = today;
+      dateInput.min = today;
+
+      // Renderizar Servicios con Promociones Destacadas en primer lugar
+      const sortedServices = [...(currentShop.services || [])].sort((a, b) => (b.isPromo ? 1 : 0) - (a.isPromo ? 1 : 0));
+      const servicesGrid = document.getElementById('servicesGrid');
+      servicesGrid.innerHTML = sortedServices.map((s, idx) => `
+        <div class="service-compact-card ${idx === 0 ? 'selected' : ''} ${s.isPromo ? 'is-promo' : ''}" onclick="selectServiceItem('${s.id}')" id="srv-${s.id}">
+          <img src="${s.photo}" alt="${s.name}" class="service-compact-thumb">
+          <div class="service-compact-info">
+            ${s.isPromo ? '<div class="service-promo-badge">🔥 PROMO DESTACADA</div>' : ''}
+            <div class="service-compact-name">${s.name}</div>
+            <div class="service-compact-desc">${s.desc}</div>
+            <div class="service-compact-duration">⏱️ ${s.duration}</div>
+          </div>
+          <div class="service-compact-price">${formatMoneyUY(s.price)}</div>
+        </div>
+      `).join('');
+      selectedService = sortedServices[0];
+
+      // Renderizar Barberos con indicación de días libres si tienen
+      const barbersGrid = document.getElementById('barbersGrid');
+      barbersGrid.innerHTML = (currentShop.barbers || []).map((b, idx) => {
+        const dayOffText = (b.daysOff && b.daysOff.length > 0) ? ` • Libre: ${DAY_NAMES[b.daysOff[0]]}s` : '';
+        return `
+          <div class="barber-compact-card ${idx === 0 ? 'selected' : ''}" onclick="selectBarberItem('${b.id}')" id="barber-${b.id}">
+            <img src="${b.photo}" alt="${b.name}" class="barber-compact-avatar">
+            <div>
+              <div class="barber-compact-name">${b.name}</div>
+              <div class="barber-compact-role">${b.role}${dayOffText}</div>
+            </div>
+          </div>
+        `;
+      }).join('');
+      selectedBarber = currentShop.barbers ? currentShop.barbers[0] : null;
+
+      // Renderizar Tienda de Productos (si el módulo está activo para esta barbería)
+      const storeCard = document.getElementById('clientStoreCard');
+      const productsGrid = document.getElementById('clientProductsGrid');
+      if (currentShop.hasStore !== false) {
+        storeCard.style.display = 'block';
+        const activeProds = (currentShop.products || []).filter(p => p.active !== false);
+        if (activeProds.length > 0) {
+          productsGrid.innerHTML = activeProds.map(p => `
+            <div class="service-compact-card product-pick-card" id="prod-${p.id}" onclick="selectProductItem('${p.id}')" style="cursor: pointer; margin-bottom: 8px;">
+              <img src="${p.photo || 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=200&q=80'}" alt="${p.name}" class="service-compact-thumb" style="border-radius: 6px;">
+              <div class="service-compact-info">
+                <div class="service-compact-name">${p.name}</div>
+                <div class="service-compact-desc">${p.desc || 'Producto premium de barbería'}</div>
+                <div style="font-size: 11px; color: #ffd700; margin-top: 2px;">📦 Retirar en local el día del corte</div>
+              </div>
+              <div style="text-align: right; display: flex; flex-direction: column; align-items: flex-end; justify-content: center;">
+                <div class="service-compact-price" style="color: #ffd700; font-size: 14px;">${formatMoneyUY(p.price)}</div>
+                <span class="prod-badge" id="prodBadge-${p.id}" style="font-size: 11px; font-weight: 700; color: var(--text-muted); margin-top: 4px; border: 1px solid rgba(255,255,255,0.2); padding: 3px 8px; border-radius: 4px; display: inline-block;">+ Agregar</span>
+              </div>
+            </div>
+          `).join('');
+        } else {
+          productsGrid.innerHTML = '<div style="color: var(--text-muted); font-size: 12px; text-align: center; padding: 8px;">Pronto tendremos productos disponibles en esta sucursal.</div>';
+        }
+      } else {
+        storeCard.style.display = 'none';
+      }
+
+      renderTimeSlots();
+      validateBarberWorkingDay();
+    }
+
+    function toggleClientStoreSection() {
+      const drawer = document.getElementById('clientStoreDrawer');
+      const btnText = document.getElementById('toggleStoreBtnText');
+      if (drawer.style.display === 'none') {
+        drawer.style.display = 'block';
+        btnText.innerHTML = 'Ocultar ▲';
+      } else {
+        drawer.style.display = 'none';
+        btnText.innerHTML = 'Ver Productos ▾';
+      }
+    }
+
+    function selectProductItem(productId) {
+      const card = document.getElementById(`prod-${productId}`);
+      const badge = document.getElementById(`prodBadge-${productId}`);
+
+      // Si ya estaba seleccionado, lo deseleccionamos (toggle)
+      if (selectedProduct && selectedProduct.id === productId) {
+        selectedProduct = null;
+        card.classList.remove('selected');
+        card.style.borderColor = 'rgba(255, 255, 255, 0.08)';
+        badge.innerText = '+ Agregar';
+        badge.style.color = 'var(--text-muted)';
+        badge.style.borderColor = 'rgba(255,255,255,0.2)';
+        badge.style.background = 'transparent';
+        return;
+      }
+
+      // Desmarcar todos los demás
+      document.querySelectorAll('.product-pick-card').forEach(el => {
+        el.classList.remove('selected');
+        el.style.borderColor = 'rgba(255, 255, 255, 0.08)';
+      });
+      document.querySelectorAll('.prod-badge').forEach(el => {
+        el.innerText = '+ Agregar';
+        el.style.color = 'var(--text-muted)';
+        el.style.borderColor = 'rgba(255,255,255,0.2)';
+        el.style.background = 'transparent';
+      });
+
+      // Seleccionar el nuevo
+      selectedProduct = (currentShop.products || []).find(p => p.id === productId);
+      if (selectedProduct) {
+        card.classList.add('selected');
+        card.style.borderColor = '#ffd700';
+        badge.innerText = '✓ Agregado';
+        badge.style.color = '#000';
+        badge.style.borderColor = '#ffd700';
+        badge.style.background = '#ffd700';
+      }
+    }
+
+    function selectServiceItem(serviceId) {
+      document.querySelectorAll('.service-compact-card').forEach(el => el.classList.remove('selected'));
+      document.getElementById(`srv-${serviceId}`).classList.add('selected');
+      selectedService = currentShop.services.find(s => s.id === serviceId);
+    }
+
+    function selectBarberItem(barberId) {
+      document.querySelectorAll('.barber-compact-card').forEach(el => el.classList.remove('selected'));
+      document.getElementById(`barber-${barberId}`).classList.add('selected');
+      selectedBarber = currentShop.barbers.find(b => b.id === barberId);
+      validateBarberWorkingDay();
+    }
+
+    function onDateOrBarberChange() {
+      renderTimeSlots();
+      validateBarberWorkingDay();
+    }
+
+    function validateBarberWorkingDay() {
+      const dateVal = document.getElementById('bookingDate').value;
+      const alertEl = document.getElementById('barberDayOffAlert');
+      const slotsGrid = document.getElementById('timeSlotsGrid');
+
+      if (!dateVal || !selectedBarber) {
+        if (alertEl) alertEl.style.display = 'none';
+        return true;
+      }
+
+      // Obtener el día de la semana (0: Domingo, 1: Lunes, etc.)
+      const [year, month, day] = dateVal.split('-').map(Number);
+      const chosenDate = new Date(year, month - 1, day);
+      const dayOfWeek = chosenDate.getDay();
+
+      if (selectedBarber.daysOff && selectedBarber.daysOff.includes(dayOfWeek)) {
+        alertEl.style.display = 'block';
+        alertEl.innerHTML = `⚠️ <strong>${selectedBarber.name}</strong> no atiende los <strong>${DAY_NAMES[dayOfWeek]}s</strong> (día de descanso). Por favor selecciona otro día o elige otro estilista.`;
+        slotsGrid.style.opacity = '0.35';
+        slotsGrid.style.pointerEvents = 'none';
+        return false;
+      } else {
+        alertEl.style.display = 'none';
+        slotsGrid.style.opacity = '1';
+        slotsGrid.style.pointerEvents = 'auto';
+        return true;
+      }
+    }
+
+    function selectTimeSlot(time, el) {
+      document.querySelectorAll('.time-slot').forEach(s => s.classList.remove('selected'));
+      el.classList.add('selected');
+      selectedTime = time;
+    }
+
+    function renderTimeSlots() {
+      const slotsGrid = document.getElementById('timeSlotsGrid');
+      selectedTime = DEFAULT_HOURS[0];
+
+      slotsGrid.innerHTML = DEFAULT_HOURS.map((h, idx) => `
+        <div class="time-slot ${idx === 0 ? 'selected' : ''}" onclick="selectTimeSlot('${h}', this)">
+          ${h}
+        </div>
+      `).join('');
+    }
+
+    function handleBooking(e) {
+      e.preventDefault();
+      
+      if (!validateBarberWorkingDay()) {
+        alert(`⚠️ ${selectedBarber.name} no atiende en el día seleccionado. Por favor cambia la fecha o el barbero.`);
+        return;
+      }
+
+      const clientName = document.getElementById('clientName').value.trim();
+      const clientPhone = document.getElementById('clientPhone').value.trim();
+      const date = document.getElementById('bookingDate').value;
+
+      if (!selectedService || !selectedBarber || !selectedTime) {
+        alert('Por favor selecciona servicio, barbero y horario.');
+        return;
+      }
+
+      const totalPrice = Number(selectedService.price) + (selectedProduct ? Number(selectedProduct.price) : 0);
+
+      const newAppointment = {
+        shopId: currentShop.id,
+        clientName: clientName,
+        clientPhone: clientPhone,
+        barberId: selectedBarber.id,
+        barberName: selectedBarber.name,
+        serviceId: selectedService.id,
+        serviceName: selectedService.name,
+        price: totalPrice,
+        productId: selectedProduct ? selectedProduct.id : null,
+        productName: selectedProduct ? selectedProduct.name : null,
+        productPrice: selectedProduct ? selectedProduct.price : 0,
+        date: date,
+        time: selectedTime,
+        status: 'confirmed'
+      };
+
+      saveAppointment(newAppointment);
+
+      // Generar botones de WhatsApp según la configuración del dueño (ambos, barbero o dueño)
+      const pref = currentShop.notificationPreference || 'both';
+      const container = document.getElementById('whatsappActionsContainer');
+
+      const waOwnerUrl = createWhatsAppBookingUrl(newAppointment, currentShop, currentShop.phone);
+      const barberPhone = selectedBarber.phone || currentShop.phone;
+      const waBarberUrl = createWhatsAppBookingUrl(newAppointment, currentShop, barberPhone);
+
+      if (pref === 'both') {
+        container.innerHTML = `
+          <a href="${waBarberUrl}" target="_blank" class="btn-whatsapp" style="display: flex; align-items: center; justify-content: center; gap: 8px;">
+            <span>✂️ Avisar al Barbero (${selectedBarber.name})</span> ➔
+          </a>
+          <a href="${waOwnerUrl}" target="_blank" class="btn" style="background: rgba(0, 255, 136, 0.12); border: 1.5px solid var(--primary); color: var(--primary); padding: 12px; font-weight: 700; border-radius: 8px; text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 8px;">
+            <span>🏢 Avisar al Local / Dueño (${currentShop.name})</span> ➔
+          </a>
+        `;
+      } else if (pref === 'barber') {
+        container.innerHTML = `
+          <a href="${waBarberUrl}" target="_blank" class="btn-whatsapp" style="display: flex; align-items: center; justify-content: center; gap: 8px;">
+            <span>✂️ Enviar Reserva a ${selectedBarber.name}</span> ➔
+          </a>
+        `;
+      } else {
+        container.innerHTML = `
+          <a href="${waOwnerUrl}" target="_blank" class="btn-whatsapp" style="display: flex; align-items: center; justify-content: center; gap: 8px;">
+            <span>🏢 Enviar Reserva a ${currentShop.name}</span> ➔
+          </a>
+        `;
+      }
+
+      const prodInfo = selectedProduct ? `<br>🛍️ <strong>Producto agregado:</strong> ${selectedProduct.name} (${formatMoneyUY(selectedProduct.price)})` : '';
+
+      document.getElementById('modalSummary').innerHTML = `
+        <strong>${clientName}</strong>, tu turno para <strong>${selectedService.name}</strong> con <strong>${selectedBarber.name}</strong> quedó agendado para el <strong>${date} a las ${selectedTime} hs</strong>.${prodInfo}
+        <div style="font-size: 16px; font-weight: 800; color: var(--primary); margin-top: 10px;">Total a pagar: ${formatMoneyUY(totalPrice)}</div>
+      `;
+
+      document.getElementById('successModal').classList.add('active');
+    }
+
+    function closeModalAndReset() {
+      document.getElementById('successModal').classList.remove('active');
+      document.getElementById('bookingForm').reset();
+      selectedProduct = null;
+      initClientPage();
+    }
+
+    window.onload = initClientPage;
+  </script>
+</body>
+</html>
