@@ -212,6 +212,30 @@
     </div>
   </div>
 
+  <!-- Modal Visualizador de Código QR Oficial -->
+  <div class="modal-overlay" id="qrModalOverlay">
+    <div class="modal" style="text-align: center; max-width: 380px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+        <h3 style="font-size: 16px; font-weight: bold; color: #fff;">💈 Código QR Oficial</h3>
+        <button onclick="closeQrModal()" style="background: none; border: none; color: var(--text-muted); font-size: 18px; cursor: pointer;">✕</button>
+      </div>
+      <p style="font-size: 13px; color: var(--primary); font-weight: 700; margin-bottom: 12px;" id="qrModalShopName">Barbería</p>
+      
+      <div style="background: #fff; padding: 12px; border-radius: 12px; display: inline-block; margin-bottom: 14px; box-shadow: 0 0 20px rgba(0,255,136,0.3);">
+        <img id="qrModalImage" src="" alt="QR Code" style="width: 200px; height: 200px; display: block;">
+      </div>
+
+      <p style="font-size: 11px; color: var(--text-muted); margin-bottom: 16px; word-break: break-all;" id="qrModalLinkText"></p>
+
+      <div style="display: flex; flex-direction: column; gap: 8px;">
+        <a id="qrModalDownloadBtn" href="" target="_blank" download="qr-barberia.png" class="btn btn-primary btn-block">
+          📥 Descargar / Imprimir QR
+        </a>
+        <button type="button" class="btn btn-secondary btn-block" onclick="closeQrModal()">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
   <script src="app.js"></script>
   <script>
     const PLAN_DEFAULTS = {
@@ -257,49 +281,92 @@
 
       const shopsListEl = document.getElementById('saasShopsList');
       shopsListEl.innerHTML = shops.map(s => {
-        const planInfo = PLAN_DEFAULTS[s.plan] || PLAN_DEFAULTS.pro;
-        const isLifetime = (s.plan === 'lifetime');
+        const bookingUrl = getShopBookingUrl(s.id);
+        const adminUrl = getShopAdminUrl(s.id);
 
         return `
-          <div class="list-item" style="flex-wrap: wrap; align-items: center; justify-content: space-between;">
-            <div class="list-item-main" style="min-width: 260px;">
+          <div class="list-item" style="flex-direction: column; align-items: stretch; gap: 12px; padding: 16px; border: 1px solid rgba(255,255,255,0.08);">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
               <div style="display: flex; align-items: center; gap: 8px;">
-                <h4 style="margin-bottom: 0;">${s.logoEmoji || '💈'} ${s.name}</h4>
+                <h4 style="margin-bottom: 0; font-size: 16px;">${s.logoEmoji || '💈'} ${s.name}</h4>
                 <span class="badge ${isLifetime ? 'badge-primary' : 'badge-secondary'}" style="font-size: 10px;">
                   ${planInfo.name}
                 </span>
+                <span class="badge ${s.status === 'active' ? 'badge-success' : 'badge-danger'}">
+                  ${s.status === 'active' ? '🟢 Activa' : '🔴 Suspendida'}
+                </span>
               </div>
-              <p style="margin-top: 4px;">📍 ${s.address} | 📱 ${s.phone}</p>
-              <div style="display: flex; align-items: center; gap: 12px; margin-top: 6px; font-size: 12px;">
-                <span style="color: #ffd700; font-weight: 700;">
-                  ${isLifetime ? '💰 Compra Única: ' + formatMoneyUY(s.monthlyFee) : '📅 Cobro: ' + formatMoneyUY(s.monthlyFee) + ' / mes'}
-                </span>
-                <span>
-                  ${s.hasStore ? '<strong style="color: #00ff88;">🛍️ Tienda Activa</strong>' : '<span style="color: #94a3b8;">🛍️ Tienda Inactiva</span>'}
-                </span>
+              <div style="font-size: 13px; font-weight: 700; color: #ffd700;">
+                ${isLifetime ? '💰 Compra: ' + formatMoneyUY(s.monthlyFee) : '📅 ' + formatMoneyUY(s.monthlyFee) + ' / mes'}
               </div>
             </div>
-            
-            <div style="display: flex; align-items: center; gap: 6px; margin-top: 8px; flex-wrap: wrap;">
-              <span class="badge ${s.status === 'active' ? 'badge-success' : 'badge-danger'}">
-                ${s.status === 'active' ? '🟢 Activa' : '🔴 Suspendida'}
-              </span>
+
+            <p style="font-size: 12px; color: var(--text-muted); margin: 0;">📍 ${s.address} | 📱 WhatsApp: ${s.phone}</p>
+
+            <!-- Enlaces directos para el Cliente y Dueño -->
+            <div style="background: rgba(0,0,0,0.35); padding: 10px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05); display: flex; flex-direction: column; gap: 8px;">
               
+              <!-- Fila App Cliente -->
+              <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px;">
+                <div style="font-size: 12px; color: var(--text-main);">
+                  📱 <strong>App Clientes:</strong> <span style="color: var(--primary); font-family: monospace; font-size: 11px;">${bookingUrl}</span>
+                </div>
+                <div style="display: flex; gap: 6px;">
+                  <button class="btn btn-secondary btn-sm" onclick="copyToClipboard('${bookingUrl}', '¡Link de App copiado!')">📋 Copiar Link</button>
+                  <button class="btn btn-primary btn-sm" onclick="window.open('${bookingUrl}', '_blank')">Abrir App ➔</button>
+                  <button class="btn btn-secondary btn-sm" onclick="openQrModal('${s.id}', '${encodeURIComponent(s.name)}')">🖼️ Ver QR</button>
+                </div>
+              </div>
+
+              <!-- Fila Panel Dueño -->
+              <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px; border-top: 1px dashed rgba(255,255,255,0.06); padding-top: 6px;">
+                <div style="font-size: 12px; color: var(--text-muted);">
+                  ✂️ <strong>Panel Barbero:</strong> <span style="color: #94a3b8; font-family: monospace; font-size: 11px;">${adminUrl}</span>
+                </div>
+                <div style="display: flex; gap: 6px;">
+                  <button class="btn btn-secondary btn-sm" onclick="copyToClipboard('${adminUrl}', '¡Link de Panel Dueño copiado!')">📋 Copiar Panel</button>
+                  <button class="btn btn-secondary btn-sm" onclick="window.open('${adminUrl}', '_blank')">Abrir Panel ➔</button>
+                </div>
+              </div>
+
+            </div>
+
+            <!-- Acciones de administración -->
+            <div style="display: flex; justify-content: flex-end; align-items: center; gap: 6px; flex-wrap: wrap;">
               <button class="btn btn-secondary btn-sm" onclick="openEditPlanModal('${s.id}')">
                 ⚙️ Plan y Módulos
               </button>
-
               <button class="btn btn-secondary btn-sm" onclick="toggleShopStatus('${s.id}')">
                 ${s.status === 'active' ? 'Suspender' : 'Reactivar'}
-              </button>
-
-              <button class="btn btn-primary btn-sm" onclick="openShopDemo('${s.id}')">
-                Abrir App ➔
               </button>
             </div>
           </div>
         `;
       }).join('');
+    }
+
+    function copyToClipboard(text, successMsg) {
+      navigator.clipboard.writeText(text).then(() => {
+        alert(successMsg || '¡Enlace copiado al portapapeles!');
+      }).catch(err => {
+        prompt('Copia este enlace manualmente:', text);
+      });
+    }
+
+    function openQrModal(shopId, encodedName) {
+      const name = decodeURIComponent(encodedName);
+      const qrUrl = getShopQrCodeUrl(shopId, 320);
+      const bookingUrl = getShopBookingUrl(shopId);
+
+      document.getElementById('qrModalShopName').innerText = name;
+      document.getElementById('qrModalImage').src = qrUrl;
+      document.getElementById('qrModalLinkText').innerText = bookingUrl;
+      document.getElementById('qrModalDownloadBtn').href = qrUrl;
+      document.getElementById('qrModalOverlay').classList.add('active');
+    }
+
+    function closeQrModal() {
+      document.getElementById('qrModalOverlay').classList.remove('active');
     }
 
     function toggleShopStatus(shopId) {

@@ -149,7 +149,45 @@ const DEFAULT_APPOINTMENTS = [
   }
 ];
 
+function encodeShopData(shop) {
+  try {
+    return encodeURIComponent(btoa(unescape(encodeURIComponent(JSON.stringify(shop)))));
+  } catch (e) {
+    return '';
+  }
+}
+
+function decodeShopData(str) {
+  try {
+    return JSON.parse(decodeURIComponent(escape(atob(decodeURIComponent(str)))));
+  } catch (e) {
+    return null;
+  }
+}
+
 function initDB() {
+  // Sincronización automática si el enlace trae datos de la barbería (?setup=)
+  try {
+    const urlParams = new URLSearchParams(window.location.search);
+    const setupParam = urlParams.get('setup');
+    if (setupParam) {
+      const importedShop = decodeShopData(setupParam);
+      if (importedShop && importedShop.id) {
+        const currentShops = JSON.parse(localStorage.getItem(STORAGE_KEYS.SHOPS) || '[]');
+        const existingIdx = currentShops.findIndex(s => s.id === importedShop.id);
+        if (existingIdx >= 0) {
+          currentShops[existingIdx] = Object.assign({}, currentShops[existingIdx], importedShop);
+        } else {
+          currentShops.push(importedShop);
+        }
+        localStorage.setItem(STORAGE_KEYS.SHOPS, JSON.stringify(currentShops));
+        localStorage.setItem(STORAGE_KEYS.ACTIVE_SHOP_ID, importedShop.id);
+      }
+    }
+  } catch (err) {
+    console.warn('Aviso sincronización enlace:', err);
+  }
+
   if (!localStorage.getItem(STORAGE_KEYS.SHOPS)) {
     localStorage.setItem(STORAGE_KEYS.SHOPS, JSON.stringify(DEFAULT_SHOPS));
   }
@@ -292,11 +330,20 @@ function updateBarberPhone(shopId, barberId, phone) {
     }
   }
   return false;
-}
-
 function getActiveShop() {
-  const activeId = localStorage.getItem(STORAGE_KEYS.ACTIVE_SHOP_ID) || 'casa-brava';
   const shops = getShops();
+  const urlParams = new URLSearchParams(window.location.search);
+  const shopParam = urlParams.get('shop');
+
+  if (shopParam) {
+    const found = shops.find(s => s.id === shopParam || s.name.toLowerCase().replace(/\s+/g, '-') === shopParam.toLowerCase());
+    if (found) {
+      localStorage.setItem(STORAGE_KEYS.ACTIVE_SHOP_ID, found.id);
+      return found;
+    }
+  }
+
+  const activeId = localStorage.getItem(STORAGE_KEYS.ACTIVE_SHOP_ID) || 'casa-brava';
   return shops.find(s => s.id === activeId) || shops[0] || DEFAULT_SHOPS[0];
 }
 
@@ -308,10 +355,30 @@ function saveShops(shops) {
   localStorage.setItem(STORAGE_KEYS.SHOPS, JSON.stringify(shops));
 }
 
-// Obtener URL de reservas para el cliente
+// Obtener URL de reservas para el cliente (funciona en cualquier celular con sincronización instantánea)
 function getShopBookingUrl(shopId) {
-  const base = window.location.href.substring(0, window.location.href.lastIndexOf('/') + 1);
-  return `${base}client.html?shop=${encodeURIComponent(shopId || 'casa-brava')}`;
+  const origin = window.location.origin;
+  const path = window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/') + 1);
+  const shops = getShops();
+  const shop = shops.find(s => s.id === shopId) || getActiveShop();
+  const setupParam = (shop && shop.id !== 'casa-brava') ? `&setup=${encodeShopData(shop)}` : '';
+  return `${origin}${path}client.html?shop=${encodeURIComponent(shopId || 'casa-brava')}${setupParam}`;
+}
+
+// Obtener URL del panel de administración del dueño
+function getShopAdminUrl(shopId) {
+  const origin = window.location.origin;
+  const path = window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/') + 1);
+  const shops = getShops();
+  const shop = shops.find(s => s.id === shopId) || getActiveShop();
+  const setupParam = (shop && shop.id !== 'casa-brava') ? `&setup=${encodeShopData(shop)}` : '';
+  return `${origin}${path}admin.html?shop=${encodeURIComponent(shopId || 'casa-brava')}${setupParam}`;
+}
+
+// Generador de QR oficial en tiempo real
+function getShopQrCodeUrl(shopId, size = 300) {
+  const bookingUrl = getShopBookingUrl(shopId);
+  return `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(bookingUrl)}&format=png&margin=10`;
 }
 
 // Alternar estado de Promoción / Destacado en un corte
