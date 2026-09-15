@@ -355,27 +355,21 @@ function saveShops(shops) {
   localStorage.setItem(STORAGE_KEYS.SHOPS, JSON.stringify(shops));
 }
 
-// Obtener URL de reservas para el cliente (funciona en cualquier celular con sincronización instantánea)
+// Obtener URL de reservas para el cliente (limpia y perfecta para QR)
 function getShopBookingUrl(shopId) {
   const origin = window.location.origin;
   const path = window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/') + 1);
-  const shops = getShops();
-  const shop = shops.find(s => s.id === shopId) || getActiveShop();
-  const setupParam = (shop && shop.id !== 'casa-brava') ? `&setup=${encodeShopData(shop)}` : '';
-  return `${origin}${path}client.html?shop=${encodeURIComponent(shopId || 'casa-brava')}${setupParam}`;
+  return `${origin}${path}client.html?shop=${encodeURIComponent(shopId || 'casa-brava')}`;
 }
 
 // Obtener URL del panel de administración del dueño
 function getShopAdminUrl(shopId) {
   const origin = window.location.origin;
   const path = window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/') + 1);
-  const shops = getShops();
-  const shop = shops.find(s => s.id === shopId) || getActiveShop();
-  const setupParam = (shop && shop.id !== 'casa-brava') ? `&setup=${encodeShopData(shop)}` : '';
-  return `${origin}${path}admin.html?shop=${encodeURIComponent(shopId || 'casa-brava')}${setupParam}`;
+  return `${origin}${path}admin.html?shop=${encodeURIComponent(shopId || 'casa-brava')}`;
 }
 
-// Generador de QR oficial en tiempo real
+// Generador de QR oficial en tiempo real (alta calidad y nítido)
 function getShopQrCodeUrl(shopId, size = 300) {
   const bookingUrl = getShopBookingUrl(shopId);
   return `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(bookingUrl)}&format=png&margin=10`;

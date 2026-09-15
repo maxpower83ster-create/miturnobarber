@@ -422,45 +422,95 @@
     }
 
     function handleCreateShop(e) {
-      e.preventDefault();
-      const name = document.getElementById('newShopName').value.trim();
-      const address = document.getElementById('newShopAddress').value.trim();
-      const phone = document.getElementById('newShopPhone').value.trim();
-      const plan = document.getElementById('newShopPlan').value;
-      const fee = document.getElementById('newShopFee').value;
-      const hasStore = document.getElementById('newShopHasStore').checked;
-      const emoji = document.getElementById('newShopEmoji').value.trim();
+      if (e) e.preventDefault();
 
-      const newShop = {
-        id: 'shop-' + Date.now(),
-        name: name,
-        tagline: 'Las mejores reservas en Salto',
-        address: address,
-        phone: phone,
-        status: 'active',
-        plan: plan,
-        hasStore: hasStore,
-        monthlyFee: Number(fee),
-        logoEmoji: emoji || '💈',
-        barbers: [
-          { id: 'b-' + Date.now(), name: 'Barbero Principal', photo: 'https://images.unsplash.com/photo-1583863788434-e58a36330cf0?w=200&q=80', role: 'Barbero Titular', commissionRate: 0.50, daysOff: [0], phone: phone }
-        ],
-        services: [
-          { id: 's-1', name: 'Corte Clásico & Fade', price: 450, duration: '30 min', desc: 'Corte profesional con degradé', photo: 'https://images.unsplash.com/photo-1622286342621-4bd786c2447c?w=160&q=80', isPromo: false },
-          { id: 's-2', name: 'Corte + Barba Completa', price: 700, duration: '45 min', desc: 'Servicio completo con toalla caliente', photo: 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=160&q=80', isPromo: true }
-        ],
-        products: [
-          { id: 'p-1', name: 'Pomada Matte Gold', price: 350, desc: 'Fijación fuerte y acabado natural mate', photo: 'https://images.unsplash.com/photo-1597854710119-a6a4220b33b9?w=160&q=80', active: true },
-          { id: 'p-2', name: 'Aceite para Barba', price: 320, desc: 'Hidratación con aroma a cedro', photo: 'https://images.unsplash.com/photo-1626806787461-102c1bfaaea1?w=160&q=80', active: true }
-        ]
-      };
+      try {
+        const nameInput = document.getElementById('newShopName');
+        const addressInput = document.getElementById('newShopAddress');
+        const phoneInput = document.getElementById('newShopPhone');
+        const planInput = document.getElementById('newShopPlan');
+        const feeInput = document.getElementById('newShopFee');
+        const storeInput = document.getElementById('newShopHasStore');
+        const emojiInput = document.getElementById('newShopEmoji');
 
-      const shops = getShops();
-      shops.push(newShop);
-      saveShops(shops);
-      closeNewShopModal();
-      renderSuperAdmin();
-      alert(`¡Barbería "${name}" dada de alta con éxito en el ${PLAN_DEFAULTS[plan].name}!`);
+        const name = (nameInput ? nameInput.value : '').trim();
+        const address = (addressInput ? addressInput.value : '').trim() || 'Salto, Uruguay';
+        const phone = (phoneInput ? phoneInput.value : '').trim() || '59899123456';
+        const plan = planInput ? planInput.value : 'pro';
+        const fee = feeInput ? Number(feeInput.value) : 1900;
+        const hasStore = storeInput ? storeInput.checked : true;
+        const emoji = (emojiInput ? emojiInput.value : '').trim() || '💈';
+
+        if (!name) {
+          alert('Por favor escribe el nombre de la barbería.');
+          return;
+        }
+
+        // Generar slug limpio para la URL (ej: "Salto Barber Club" -> "salto-barber-club")
+        const cleanSlug = name.toLowerCase()
+          .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/^-+|-+$/g, '') || ('shop-' + Date.now());
+
+        const newShop = {
+          id: cleanSlug,
+          name: name,
+          subtitle: 'BARBERÍA & ESTILO',
+          heroTitle: 'Tu estilo habla por ti.',
+          heroHighlight: 'Defínelo con expertos.',
+          tagline: 'Las mejores reservas y cortes profesionales en Salto.',
+          address: address,
+          phone: phone,
+          status: 'active',
+          plan: plan,
+          hasStore: hasStore,
+          monthlyFee: fee,
+          logoEmoji: emoji,
+          brandColor: '#00ff88',
+          workingHours: {
+            start: '09:00',
+            end: '20:00',
+            intervalMinutes: 45,
+            daysOpen: ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado']
+          },
+          barbers: [
+            { id: 'b-' + Date.now(), name: 'Barbero Titular', photo: 'https://images.unsplash.com/photo-1583863788434-e58a36330cf0?w=200&q=80', role: 'Barbero Titular • Fade', commissionRate: 0.50, daysOff: [0], phone: phone }
+          ],
+          services: [
+            { id: 's-1', name: 'Corte Clásico & Fade', price: 450, duration: '30 min', desc: 'Corte profesional con degradé y acabado impecable', photo: 'https://images.unsplash.com/photo-1622286342621-4bd786c2447c?w=160&q=80', isPromo: false },
+            { id: 's-2', name: 'Ritual Barba Tradicional', price: 350, duration: '30 min', desc: 'Perfilado a navaja, toalla caliente e hidratación', photo: 'https://images.unsplash.com/photo-1621605815971-fbc98d665033?w=160&q=80', isPromo: false },
+            { id: 's-3', name: 'Combo Completo (Pelo + Barba)', price: 700, duration: '60 min', desc: 'Experiencia completa corte y barba esculpida', photo: 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=160&q=80', isPromo: true }
+          ],
+          products: [
+            { id: 'p-1', name: 'Pomada Matte Gold (Fijación Fuerte)', price: 350, desc: 'Fijación fuerte y acabado natural mate', photo: 'https://images.unsplash.com/photo-1597854710119-a6a4220b33b9?w=160&q=80', active: true },
+            { id: 'p-2', name: 'Aceite Esencial para Barba', price: 320, desc: 'Hidratación con aroma a cedro noble', photo: 'https://images.unsplash.com/photo-1626806787461-102c1bfaaea1?w=160&q=80', active: true }
+          ]
+        };
+
+        const shops = getShops();
+        
+        // Si ya existía una con ese mismo ID, la reemplaza, sino la añade
+        const existingIdx = shops.findIndex(s => s.id === cleanSlug);
+        if (existingIdx >= 0) {
+          shops[existingIdx] = newShop;
+        } else {
+          shops.push(newShop);
+        }
+
+        saveShops(shops);
+        closeNewShopModal();
+        renderSuperAdmin();
+
+        // Limpiar campos del formulario
+        if (nameInput) nameInput.value = '';
+        if (addressInput) addressInput.value = '';
+        if (phoneInput) phoneInput.value = '';
+
+        alert(`✅ ¡Barbería "${name}" guardada y activada con éxito!\n\n📱 Link de App: ${getShopBookingUrl(cleanSlug)}`);
+      } catch (err) {
+        console.error('Error guardando barbería:', err);
+        alert('Hubo un detalle al guardar: ' + err.message);
+      }
     }
 
     window.onload = renderSuperAdmin;
