@@ -5,6 +5,40 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Super Admin SaaS | BarberFlow Salto</title>
   <link rel="stylesheet" href="styles.css">
+  <script>
+    // GUARDIÁN DE SEGURIDAD CRÍTICO INMEDIATO (Antes de pintar la página)
+    (function() {
+      try {
+        var rawSession = localStorage.getItem('miturnobarber_auth_session_v9');
+        var userRaw = localStorage.getItem('currentUser');
+        var shopRole = localStorage.getItem('shopRole');
+        var isSuperAdmin = false;
+
+        if (rawSession) {
+          var sess = JSON.parse(rawSession);
+          if (sess && sess.role === 'superadmin') {
+            isSuperAdmin = true;
+          }
+        }
+        if (!isSuperAdmin && shopRole === 'superadmin') {
+          isSuperAdmin = true;
+        }
+        if (!isSuperAdmin && userRaw) {
+          var u = JSON.parse(userRaw);
+          if (u && u.role === 'superadmin') {
+            isSuperAdmin = true;
+          }
+        }
+
+        if (!isSuperAdmin) {
+          // Si no hay sesión válida de superadmin, expulsar inmediatamente sin cargar la vista
+          window.location.replace('login.html');
+        }
+      } catch (e) {
+        window.location.replace('login.html');
+      }
+    })();
+  </script>
 </head>
 <body>
 
@@ -17,9 +51,11 @@
         <p>Panel de Control del Dueño de la Plataforma</p>
       </div>
     </div>
-    <div style="display: flex; gap: 8px;">
+    <div style="display: flex; gap: 8px; align-items: center;">
       <a href="index.html" class="btn btn-secondary btn-sm">🏠 Web Principal</a>
-      <button onclick="logoutUser()" class="btn btn-secondary btn-sm" style="color: #ff5555; border-color: rgba(239, 68, 68, 0.4);">🚪 Salir</button>
+      <button onclick="handleSuperAdminLogout()" class="btn btn-secondary btn-sm" style="color: #ff4d4d; border: 1.5px solid #ff4d4d; background: rgba(255, 77, 77, 0.1); font-weight: 700; cursor: pointer;">
+        🚪 Cerrar Sesión
+      </button>
     </div>
   </header>
 
@@ -273,6 +309,13 @@
   <script>
     // Protección de sesión: Solo el dueño de la plataforma (superadmin) puede entrar
     requireAuth('superadmin');
+
+    function handleSuperAdminLogout() {
+      if (confirm('¿Deseas cerrar la sesión de Super Admin?')) {
+        localStorage.clear();
+        window.location.replace('login.html');
+      }
+    }
 
     // Función de configuración de promociones por defecto (asegurada en superadmin)
     function getDefaultPromotionsConfig() {
