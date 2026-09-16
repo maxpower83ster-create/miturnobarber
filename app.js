@@ -490,7 +490,62 @@ async function authenticateUser(email, password) {
     return { success: false, message: 'Por favor completa todos los campos.' };
   }
 
-  // 1. Verificar SuperAdmin
+  // 1. Verificación directa en Supabase: SELECT * FROM shops WHERE email = [email] AND password_hash = [password]
+  try {
+    const encodedEmail = encodeURIComponent(cleanEmail);
+    const remoteShops = await supabaseFetch(`shops?email=eq.${encodedEmail}&select=*`);
+
+    if (Array.isArray(remoteShops) && remoteShops.length > 0) {
+      const dbRow = remoteShops[0];
+      const parsedShop = mapShopFromSupabase(dbRow);
+
+      // Verificar contraseña
+      if (parsedShop.password !== cleanPass) {
+        return { success: false, message: 'Credenciales inválidas' };
+      }
+
+      // Caso A: Si el rol es superadmin (o si es la cuenta maestra admin@miturnobarber.com)
+      if (dbRow.role === 'superadmin' || cleanEmail === SUPERADMIN_ACCOUNT.email) {
+        const session = {
+          role: 'superadmin',
+          email: cleanEmail,
+          name: parsedShop.name || SUPERADMIN_ACCOUNT.name,
+          token: 'sa_' + Date.now(),
+          loginAt: new Date().toISOString()
+        };
+        localStorage.setItem(STORAGE_KEYS.AUTH_SESSION, JSON.stringify(session));
+        return { success: true, role: 'superadmin', session };
+      }
+
+      // Caso B: Si es una barbería (barber / barbero)
+      const currentShops = getShops();
+      const existingIdx = currentShops.findIndex(s => s.id === parsedShop.id || s.email === cleanEmail);
+      if (existingIdx >= 0) {
+        currentShops[existingIdx] = parsedShop;
+      } else {
+        currentShops.push(parsedShop);
+      }
+      localStorage.setItem(STORAGE_KEYS.SHOPS, JSON.stringify(currentShops));
+
+      const session = {
+        role: 'barbero',
+        shop_id: parsedShop.id,
+        slug: parsedShop.slug || parsedShop.id,
+        shopName: parsedShop.name,
+        email: cleanEmail,
+        token: 'bk_' + Date.now(),
+        loginAt: new Date().toISOString()
+      };
+      localStorage.setItem(STORAGE_KEYS.AUTH_SESSION, JSON.stringify(session));
+      localStorage.setItem(STORAGE_KEYS.ACTIVE_SHOP_ID, parsedShop.id);
+
+      return { success: true, role: 'barbero', shop: parsedShop, slug: session.slug, session };
+    }
+  } catch (err) {
+    console.warn('Aviso de consulta a Supabase en login:', err);
+  }
+
+  // 2. Fallback de cuenta maestra SuperAdmin
   if (cleanEmail === SUPERADMIN_ACCOUNT.email && cleanPass === SUPERADMIN_ACCOUNT.password) {
     const session = {
       role: 'superadmin',
@@ -503,73 +558,38 @@ async function authenticateUser(email, password) {
     return { success: true, role: 'superadmin', session };
   }
 
-  // 2. Consultar directamente la tabla `shops` en Supabase
-  try {
-    const encodedEmail = encodeURIComponent(cleanEmail);
-    const remoteShops = await supabaseFetch(`shops?email=eq.${encodedEmail}&select=*`);
-
-    if (Array.isArray(remoteShops) && remoteShops.length > 0) {
-      const dbShopRow = remoteShops[0];
-      const parsedShop = mapShopFromSupabase(dbShopRow);
-
-      // Validar contraseña
-      if (parsedShop.password !== cleanPass) {
-        return { success: false, message: 'La contraseña ingresada es incorrecta.' };
-      }
-
-      // Guardar barbería actualizada en caché local
-      const currentShops = getShops();
-      const existingIdx = currentShops.findIndex(s => s.id === parsedShop.id || s.email === cleanEmail);
-      if (existingIdx >= 0) {
-        currentShops[existingIdx] = parsedShop;
-      } else {
-        currentShops.push(parsedShop);
-      }
-      localStorage.setItem(STORAGE_KEYS.SHOPS, JSON.stringify(currentShops));
-
-      const session = {
-        role: 'barber',
-        shopId: parsedShop.id,
-        shopSlug: parsedShop.slug || parsedShop.id,
-        shopName: parsedShop.name,
-        email: cleanEmail,
-        token: 'bk_' + Date.now(),
-        loginAt: new Date().toISOString()
-      };
-      localStorage.setItem(STORAGE_KEYS.AUTH_SESSION, JSON.stringify(session));
-      localStorage.setItem(STORAGE_KEYS.ACTIVE_SHOP_ID, parsedShop.id);
-
-      return { success: true, role: 'barber', shop: parsedShop, session };
-    }
-  } catch (err) {
-    console.warn('Fallo consulta directa a Supabase en login, intentando con caché local:', err);
-  }
-
-  // 3. Fallback en caché local (si Supabase no responde o estuviera offline)
+  // 3. Fallback de barberías locales en caché
   const shops = getShops();
   const shop = shops.find(s => (s.email || '').toLowerCase().trim() === cleanEmail);
 
-  if (!shop) {
-    return { success: false, message: 'No existe ninguna cuenta registrada con este correo.' };
+  if (shop && shop.password === cleanPass) {
+    if (shop.role === 'superadmin') {
+      const session = {
+        role: 'superadmin',
+        email: cleanEmail,
+        name: shop.name,
+        token: 'sa_' + Date.now(),
+        loginAt: new Date().toISOString()
+      };
+      localStorage.setItem(STORAGE_KEYS.AUTH_SESSION, JSON.stringify(session));
+      return { success: true, role: 'superadmin', session };
+    }
+
+    const session = {
+      role: 'barbero',
+      shop_id: shop.id,
+      slug: shop.slug || shop.id,
+      shopName: shop.name,
+      email: cleanEmail,
+      token: 'bk_' + Date.now(),
+      loginAt: new Date().toISOString()
+    };
+    localStorage.setItem(STORAGE_KEYS.AUTH_SESSION, JSON.stringify(session));
+    localStorage.setItem(STORAGE_KEYS.ACTIVE_SHOP_ID, shop.id);
+    return { success: true, role: 'barbero', shop, slug: session.slug, session };
   }
 
-  if (shop.password !== cleanPass) {
-    return { success: false, message: 'La contraseña ingresada es incorrecta.' };
-  }
-
-  const session = {
-    role: 'barber',
-    shopId: shop.id,
-    shopSlug: shop.slug || shop.id,
-    shopName: shop.name,
-    email: cleanEmail,
-    token: 'bk_' + Date.now(),
-    loginAt: new Date().toISOString()
-  };
-
-  localStorage.setItem(STORAGE_KEYS.AUTH_SESSION, JSON.stringify(session));
-  localStorage.setItem(STORAGE_KEYS.ACTIVE_SHOP_ID, shop.id);
-  return { success: true, role: 'barber', shop, session };
+  return { success: false, message: 'Credenciales inválidas' };
 }
 
 function getCurrentSession() {
@@ -637,20 +657,23 @@ function requireAuth(allowedRole = 'any') {
     return null;
   }
 
-  if (allowedRole === 'barber' && session.role !== 'barber') {
+  if (allowedRole === 'barber' && session.role !== 'barber' && session.role !== 'barbero') {
     window.location.href = 'login.html?msg=unauthorized';
     return null;
   }
 
   // Si es barbero, verificar que su tienda esté activa
-  if (session.role === 'barber') {
+  if (session.role === 'barber' || session.role === 'barbero') {
+    const shopId = session.shop_id || session.shopId;
     const shops = getShops();
-    const shop = shops.find(s => s.id === session.shopId);
-    const check = checkShopAccessStatus(shop);
-    if (!check.allowed) {
-      logoutSession();
-      window.location.href = 'login.html?msg=expired';
-      return null;
+    const shop = shops.find(s => s.id === shopId || (s.slug && s.slug === session.slug));
+    if (shop) {
+      const check = checkShopAccessStatus(shop);
+      if (!check.allowed) {
+        logoutSession();
+        window.location.href = 'login.html?msg=expired';
+        return null;
+      }
     }
   }
 

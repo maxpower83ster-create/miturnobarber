@@ -174,8 +174,8 @@
           return;
         }
 
-        // Si es Barbería
-        if (result.role === 'barber') {
+        // Si es Barbería (barbero o barber)
+        if (result.role === 'barbero' || result.role === 'barber') {
           const shop = result.shop;
           const statusCheck = checkShopAccessStatus(shop);
 
@@ -190,12 +190,14 @@
           }
 
           submitBtn.innerText = '¡Acceso Concedido! Entrando a tu panel...';
-          window.location.href = `admin.html?shop=${encodeURIComponent(shop.id)}`;
+          const targetSlug = result.slug || (shop && (shop.slug || shop.id)) || 'casa-brava';
+          window.location.href = `admin.html?b=${encodeURIComponent(targetSlug)}`;
+          return;
         }
       } catch (err) {
         console.error('Error durante autenticación:', err);
         alertBox.className = 'auth-alert error';
-        alertBox.innerText = 'Ocurrió un error al verificar tus datos. Inténtalo de nuevo.';
+        alertBox.innerText = 'Credenciales inválidas. Por favor verifica tus datos e inténtalo nuevamente.';
         alertBox.style.display = 'block';
         submitBtn.disabled = false;
         submitBtn.innerText = 'Ingresar al Panel Seguro ➔';
@@ -212,13 +214,17 @@
       if (session) {
         if (session.role === 'superadmin') {
           window.location.href = 'superadmin.html';
-        } else if (session.role === 'barber' && session.shopId) {
+          return;
+        } else if ((session.role === 'barbero' || session.role === 'barber') && (session.shop_id || session.shopId || session.slug)) {
+          const targetShopId = session.shop_id || session.shopId;
           const shops = getShops();
-          const shop = shops.find(s => s.id === session.shopId);
+          const shop = shops.find(s => s.id === targetShopId || (s.slug && s.slug === session.slug));
           if (shop) {
             const check = checkShopAccessStatus(shop);
             if (check.allowed) {
-              window.location.href = `admin.html?shop=${encodeURIComponent(shop.id)}`;
+              const targetSlug = session.slug || shop.slug || shop.id;
+              window.location.href = `admin.html?b=${encodeURIComponent(targetSlug)}`;
+              return;
             }
           }
         }
