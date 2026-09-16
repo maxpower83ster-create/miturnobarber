@@ -17,7 +17,10 @@
         <p>Panel de Control del Dueño de la Plataforma</p>
       </div>
     </div>
-    <a href="index.html" class="btn btn-secondary btn-sm">🏠 Volver al Portal</a>
+    <div style="display: flex; gap: 8px;">
+      <a href="index.html" class="btn btn-secondary btn-sm">🏠 Web Principal</a>
+      <button onclick="logoutUser()" class="btn btn-secondary btn-sm" style="color: #ff5555; border-color: rgba(239, 68, 68, 0.4);">🚪 Salir</button>
+    </div>
   </header>
 
   <div class="container">
@@ -129,6 +132,36 @@
         </div>
 
         <div class="form-group">
+          <label class="form-label">Email de Acceso para el Barbero:</label>
+          <input type="email" id="newShopEmail" class="form-input" placeholder="Ej: contacto@barberia.com" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Contraseña inicial de Acceso:</label>
+          <input type="text" id="newShopPassword" class="form-input" value="barber123" required>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+          <div class="form-group">
+            <label class="form-label">Estado de la Cuenta:</label>
+            <select id="newShopStatus" class="form-select" onchange="onNewShopStatusChange(this.value)">
+              <option value="trial" selected>🟡 Período de Prueba (Demo)</option>
+              <option value="active">🟢 Cuenta Activa / Pagando</option>
+              <option value="suspended">🔴 Suspendida</option>
+            </select>
+          </div>
+
+          <div class="form-group" id="groupTrialDays">
+            <label class="form-label">Días de Prueba Gratis:</label>
+            <select id="newShopTrialDays" class="form-select">
+              <option value="3">3 Días de Demostración</option>
+              <option value="7" selected>7 Días de Demostración</option>
+              <option value="14">14 Días de Demostración</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
           <label class="form-label">Tipo de Membresía / Plan:</label>
           <select id="newShopPlan" class="form-select" onchange="onNewShopPlanChange(this.value)">
             <option value="standard">Plan Básico ($ 1.200 UYU / mes)</option>
@@ -156,7 +189,7 @@
         </div>
 
         <div style="display: flex; gap: 10px; margin-top: 20px;">
-          <button type="submit" class="btn btn-primary btn-block">Guardar y Activar</button>
+          <button type="submit" class="btn btn-primary btn-block">Guardar y Dar de Alta</button>
           <button type="button" class="btn btn-secondary" onclick="closeNewShopModal()">Cancelar</button>
         </div>
       </form>
@@ -238,12 +271,22 @@
 
   <script src="app.js"></script>
   <script>
+    // Protección de sesión: Solo el dueño de la plataforma (superadmin) puede entrar
+    requireAuth('superadmin');
+
     const PLAN_DEFAULTS = {
       standard: { name: 'Plan Básico', fee: 1200, hasStore: false },
       pro: { name: 'Plan Pro + Tienda', fee: 1900, hasStore: true },
       vip: { name: 'Plan Imperial VIP', fee: 2600, hasStore: true },
       lifetime: { name: 'Licencia Definitiva', fee: 19500, hasStore: true }
     };
+
+    function onNewShopStatusChange(status) {
+      const trialGroup = document.getElementById('groupTrialDays');
+      if (trialGroup) {
+        trialGroup.style.display = (status === 'trial') ? 'block' : 'none';
+      }
+    }
 
     function onNewShopPlanChange(planKey) {
       if (PLAN_DEFAULTS[planKey]) {
@@ -283,25 +326,45 @@
       shopsListEl.innerHTML = shops.map(s => {
         const bookingUrl = getShopBookingUrl(s.id);
         const adminUrl = getShopAdminUrl(s.id);
+        const planInfo = PLAN_DEFAULTS[s.plan] || { name: 'Plan Pro' };
+        const isLifetime = s.plan === 'lifetime';
+
+        // Estado y badge de prueba / activo / suspendido
+        const statusCheck = checkShopAccessStatus(s);
+        let statusBadge = '';
+        if (s.status === 'trial') {
+          if (statusCheck.allowed) {
+            statusBadge = `<span class="badge" style="background: rgba(234, 179, 8, 0.2); color: #eab308; border: 1px solid #eab308;">🟡 Demo (${statusCheck.daysLeft} días restantes)</span>`;
+          } else {
+            statusBadge = `<span class="badge badge-danger">⚠️ Demo Vencida</span>`;
+          }
+        } else if (s.status === 'active') {
+          statusBadge = `<span class="badge badge-success">🟢 Activa</span>`;
+        } else {
+          statusBadge = `<span class="badge badge-danger">🔴 Suspendida</span>`;
+        }
 
         return `
           <div class="list-item" style="flex-direction: column; align-items: stretch; gap: 12px; padding: 16px; border: 1px solid rgba(255,255,255,0.08);">
             <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
-              <div style="display: flex; align-items: center; gap: 8px;">
+              <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
                 <h4 style="margin-bottom: 0; font-size: 16px;">${s.logoEmoji || '💈'} ${s.name}</h4>
                 <span class="badge ${isLifetime ? 'badge-primary' : 'badge-secondary'}" style="font-size: 10px;">
                   ${planInfo.name}
                 </span>
-                <span class="badge ${s.status === 'active' ? 'badge-success' : 'badge-danger'}">
-                  ${s.status === 'active' ? '🟢 Activa' : '🔴 Suspendida'}
-                </span>
+                ${statusBadge}
               </div>
               <div style="font-size: 13px; font-weight: 700; color: #ffd700;">
                 ${isLifetime ? '💰 Compra: ' + formatMoneyUY(s.monthlyFee) : '📅 ' + formatMoneyUY(s.monthlyFee) + ' / mes'}
               </div>
             </div>
 
-            <p style="font-size: 12px; color: var(--text-muted); margin: 0;">📍 ${s.address} | 📱 WhatsApp: ${s.phone}</p>
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; font-size: 12px; color: var(--text-muted);">
+              <div>📍 ${s.address} | 📱 WhatsApp: ${s.phone}</div>
+              <div style="background: rgba(255,255,255,0.05); padding: 3px 8px; border-radius: 4px; font-family: monospace;">
+                🔑 Login: <strong style="color: #fff;">${s.email || 'contacto@' + s.id + '.com'}</strong> / Pass: <strong style="color: var(--primary);">${s.password || 'barber123'}</strong>
+              </div>
+            </div>
 
             <!-- Enlaces directos para el Cliente y Dueño -->
             <div style="background: rgba(0,0,0,0.35); padding: 10px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05); display: flex; flex-direction: column; gap: 8px;">
@@ -336,8 +399,14 @@
               <button class="btn btn-secondary btn-sm" onclick="openEditPlanModal('${s.id}')">
                 ⚙️ Plan y Módulos
               </button>
-              <button class="btn btn-secondary btn-sm" onclick="toggleShopStatus('${s.id}')">
-                ${s.status === 'active' ? 'Suspender' : 'Reactivar'}
+              <button class="btn btn-secondary btn-sm" style="color: #22c55e;" onclick="activateShopDirectly('${s.id}')">
+                ✅ Marcar Pagada / Activar
+              </button>
+              <button class="btn btn-secondary btn-sm" style="color: #eab308;" onclick="extendShopTrial('${s.id}', 7)">
+                +7 Días Demo
+              </button>
+              <button class="btn btn-secondary btn-sm" style="color: #ef4444;" onclick="toggleShopStatus('${s.id}')">
+                ${s.status === 'suspended' ? 'Reactivar' : 'Suspender'}
               </button>
             </div>
           </div>
@@ -421,6 +490,35 @@
       alert('¡Plan y módulos de la barbería actualizados con éxito!');
     }
 
+    function activateShopDirectly(shopId) {
+      const shops = getShops();
+      const s = shops.find(item => item.id === shopId);
+      if (s) {
+        s.status = 'active';
+        s.subscriptionStatus = 'active';
+        saveShops(shops);
+        renderSuperAdmin();
+        alert(`✅ Barbería "${s.name}" activada como cliente permanente.`);
+      }
+    }
+
+    function extendShopTrial(shopId, days = 7) {
+      const shops = getShops();
+      const s = shops.find(item => item.id === shopId);
+      if (s) {
+        s.status = 'trial';
+        s.subscriptionStatus = 'trial';
+        const currentEnd = (s.trialEndsAt && new Date(s.trialEndsAt) > new Date()) 
+          ? new Date(s.trialEndsAt) 
+          : new Date();
+        currentEnd.setDate(currentEnd.getDate() + days);
+        s.trialEndsAt = currentEnd.toISOString();
+        saveShops(shops);
+        renderSuperAdmin();
+        alert(`🎉 Período demo de "${s.name}" extendido por ${days} días más.`);
+      }
+    }
+
     function handleCreateShop(e) {
       if (e) e.preventDefault();
 
@@ -428,6 +526,10 @@
         const nameInput = document.getElementById('newShopName');
         const addressInput = document.getElementById('newShopAddress');
         const phoneInput = document.getElementById('newShopPhone');
+        const emailInput = document.getElementById('newShopEmail');
+        const passwordInput = document.getElementById('newShopPassword');
+        const statusInput = document.getElementById('newShopStatus');
+        const trialDaysInput = document.getElementById('newShopTrialDays');
         const planInput = document.getElementById('newShopPlan');
         const feeInput = document.getElementById('newShopFee');
         const storeInput = document.getElementById('newShopHasStore');
@@ -436,6 +538,10 @@
         const name = (nameInput ? nameInput.value : '').trim();
         const address = (addressInput ? addressInput.value : '').trim() || 'Salto, Uruguay';
         const phone = (phoneInput ? phoneInput.value : '').trim() || '59899123456';
+        const email = (emailInput ? emailInput.value : '').trim() || ('contacto@' + Date.now() + '.com');
+        const password = (passwordInput ? passwordInput.value : '').trim() || 'barber123';
+        const status = statusInput ? statusInput.value : 'trial';
+        const trialDays = trialDaysInput ? Number(trialDaysInput.value) : 7;
         const plan = planInput ? planInput.value : 'pro';
         const fee = feeInput ? Number(feeInput.value) : 1900;
         const hasStore = storeInput ? storeInput.checked : true;
@@ -446,11 +552,14 @@
           return;
         }
 
-        // Generar slug limpio para la URL (ej: "Salto Barber Club" -> "salto-barber-club")
+        // Generar slug limpio para la URL
         const cleanSlug = name.toLowerCase()
           .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
           .replace(/[^a-z0-9]+/g, '-')
           .replace(/^-+|-+$/g, '') || ('shop-' + Date.now());
+
+        const trialEnds = new Date();
+        trialEnds.setDate(trialEnds.getDate() + trialDays);
 
         const newShop = {
           id: cleanSlug,
@@ -461,12 +570,18 @@
           tagline: 'Las mejores reservas y cortes profesionales en Salto.',
           address: address,
           phone: phone,
-          status: 'active',
+          email: email,
+          password: password,
+          status: status,
+          subscriptionStatus: status,
+          trialDays: trialDays,
+          trialEndsAt: trialEnds.toISOString(),
           plan: plan,
           hasStore: hasStore,
           monthlyFee: fee,
           logoEmoji: emoji,
           brandColor: '#00ff88',
+          promotions: getDefaultPromotionsConfig(),
           workingHours: {
             start: '09:00',
             end: '20:00',
@@ -488,8 +603,6 @@
         };
 
         const shops = getShops();
-        
-        // Si ya existía una con ese mismo ID, la reemplaza, sino la añade
         const existingIdx = shops.findIndex(s => s.id === cleanSlug);
         if (existingIdx >= 0) {
           shops[existingIdx] = newShop;
@@ -505,8 +618,9 @@
         if (nameInput) nameInput.value = '';
         if (addressInput) addressInput.value = '';
         if (phoneInput) phoneInput.value = '';
+        if (emailInput) emailInput.value = '';
 
-        alert(`✅ ¡Barbería "${name}" guardada y activada con éxito!\n\n📱 Link de App: ${getShopBookingUrl(cleanSlug)}`);
+        alert(`✅ ¡Barbería "${name}" creada con éxito!\n\n🔑 Acceso Barbero: ${email} (clave: ${password})\n📱 Link App Clientes: ${getShopBookingUrl(cleanSlug)}`);
       } catch (err) {
         console.error('Error guardando barbería:', err);
         alert('Hubo un detalle al guardar: ' + err.message);

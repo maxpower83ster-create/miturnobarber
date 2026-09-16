@@ -2,163 +2,174 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>BarberFlow Salto | Plataforma SaaS de Gestión y Reservas</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>MiTurnoBarber | Plataforma SaaS de Reservas y Gestión para Barberías</title>
   <link rel="stylesheet" href="styles.css">
   <style>
-    .hero {
+    .hero-commercial {
       text-align: center;
-      padding: 40px 16px 20px 16px;
+      padding: 50px 16px 30px 16px;
     }
-    .hero h1 {
-      font-size: 32px;
+    .hero-commercial h1 {
+      font-size: 34px;
       font-weight: 800;
       background: linear-gradient(135deg, #fff 40%, var(--primary) 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
-      margin-bottom: 10px;
+      margin-bottom: 12px;
+      line-height: 1.2;
     }
-    .hero p {
+    .hero-commercial p {
       font-size: 16px;
       color: var(--text-muted);
-      max-width: 600px;
-      margin: 0 auto;
+      max-width: 620px;
+      margin: 0 auto 24px auto;
+      line-height: 1.5;
     }
-    .module-card {
+    .cta-row {
       display: flex;
-      flex-direction: column;
-      justify-content: space-between;
+      justify-content: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 36px;
+    }
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 16px;
+      margin-top: 10px;
+    }
+    .feature-box {
+      background: linear-gradient(145deg, var(--bg-card) 0%, rgba(18, 22, 30, 0.7) 100%);
       border: 1px solid var(--border-color);
       border-radius: var(--radius);
       padding: 24px;
-      background: linear-gradient(145deg, var(--bg-card) 0%, rgba(22, 25, 31, 0.6) 100%);
       transition: all 0.3s ease;
-      margin-bottom: 16px;
     }
-    .module-card:hover {
+    .feature-box:hover {
       border-color: var(--primary);
-      transform: translateY(-2px);
-      box-shadow: 0 12px 30px rgba(0,0,0,0.6);
+      transform: translateY(-3px);
+      box-shadow: 0 10px 25px rgba(0, 255, 136, 0.15);
     }
-    .module-icon {
+    .feature-icon {
       font-size: 32px;
       margin-bottom: 12px;
+    }
+    .feature-title {
+      font-size: 17px;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 8px;
+    }
+    .feature-desc {
+      font-size: 13px;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+    .preview-phone-box {
+      background: #11141c;
+      border: 1px solid var(--border-gold);
+      border-radius: var(--radius);
+      padding: 20px;
+      margin: 30px 0;
+      text-align: center;
+      box-shadow: 0 0 30px rgba(0,255,136,0.15);
     }
   </style>
 </head>
 <body>
 
-  <!-- Encabezado Principal -->
+  <!-- Encabezado Principal Comercial -->
   <header class="header">
     <div class="logo-container">
       <div class="logo-badge">💈</div>
       <div class="logo-text">
-        <h1>BarberFlow Salto</h1>
-        <p>Sistema de Gestión y Reservas</p>
+        <h1>MiTurnoBarber</h1>
+        <p>Sistema Inteligente de Reservas</p>
       </div>
     </div>
     <div>
-      <span class="badge badge-primary">Demostración Activa</span>
+      <a href="login.html" class="btn btn-primary btn-sm" style="font-weight: 800;">
+        🔐 Acceso Barberías
+      </a>
     </div>
   </header>
 
   <div class="container">
-    <div class="hero">
-      <h1>Tu Negocio de Software en Salto</h1>
-      <p>Explora los 3 módulos del sistema. Puedes probarlo desde la perspectiva del cliente, del barbero o desde tu panel como dueño del software.</p>
-    </div>
-
-    <!-- Selector de Barbería Activa para la Demo -->
-    <div class="card" style="margin-top: 10px;">
-      <div class="form-group" style="margin-bottom: 0;">
-        <label class="form-label">🏪 Barbería seleccionada para probar la demo:</label>
-        <select id="shopSelector" class="form-select" onchange="changeDemoShop(this.value)">
-          <!-- Opciones dinámicas -->
-        </select>
-      </div>
-    </div>
-
-    <!-- Módulos Interactivos -->
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; margin-top: 20px;">
-      
-      <!-- Módulo 1: Vista del Cliente -->
-      <div class="module-card">
-        <div>
-          <div class="module-icon">📱</div>
-          <h3 style="font-size: 18px; margin-bottom: 8px;">1. Pantalla del Cliente</h3>
-          <p style="font-size: 14px; color: var(--text-muted); margin-bottom: 16px;">
-            Así es como los clientes de la barbería eligen su corte, seleccionan barbero, día y reservan por WhatsApp en segundos.
-          </p>
-        </div>
-        <a href="client.html" class="btn btn-primary btn-block">Abrir Reservas de Cliente ➔</a>
-      </div>
-
-      <!-- Módulo 2: Vista de la Barbería -->
-      <div class="module-card">
-        <div>
-          <div class="module-icon">✂️</div>
-          <h3 style="font-size: 18px; margin-bottom: 8px;">2. Panel del Dueño / Barbero</h3>
-          <p style="font-size: 14px; color: var(--text-muted); margin-bottom: 16px;">
-            El panel que le entregas a la barbería para ver los turnos del día, total de caja en $UYU y comisiones automáticas de los empleados.
-          </p>
-        </div>
-        <a href="admin.html" class="btn btn-secondary btn-block">Abrir Panel de la Barbería ➔</a>
-      </div>
-
-      <!-- Módulo 3: Tu Super Panel de Administrador -->
-      <div class="module-card" style="border-color: rgba(212, 175, 55, 0.4);">
-        <div>
-          <div class="module-icon">👑</div>
-          <h3 style="font-size: 18px; margin-bottom: 8px; color: var(--primary);">3. Tu Panel SaaS (Super Admin)</h3>
-          <p style="font-size: 14px; color: var(--text-muted); margin-bottom: 16px;">
-            Tu panel de control donde creas nuevas barberías en Salto, ves tus ingresos mensuales recurrentes ($UYU) y activas/suspendes accesos.
-          </p>
-        </div>
-        <a href="superadmin.html" class="btn btn-primary btn-block" style="background: linear-gradient(135deg, #ffd700 0%, #d4af37 100%);">Abrir tu Panel Maestro ➔</a>
-      </div>
-
-      <!-- Módulo 4: Propuesta Comercial para Nuevos Clientes -->
-      <div class="module-card" style="border-color: rgba(0, 255, 136, 0.4); background: linear-gradient(145deg, #111b15 0%, rgba(13, 20, 16, 0.8) 100%);">
-        <div>
-          <div class="module-icon">💼</div>
-          <h3 style="font-size: 18px; margin-bottom: 8px; color: #00ff88;">4. Dossier Comercial para Clientes</h3>
-          <p style="font-size: 14px; color: var(--text-muted); margin-bottom: 16px;">
-            Presentación interactiva lista para mostrar a dueños de barberías en Salto. Explica los beneficios, cálculos de ahorro y planes en $UYU.
-          </p>
-        </div>
-        <a href="propuesta-comercial.html" class="btn btn-primary btn-block" style="background: #00ff88; color: #08090c; font-weight: 800; border-color: #00ff88;">Ver Propuesta de Venta ➔</a>
-      </div>
-
-    </div>
-
-    <!-- Guía de ventas rápida -->
-    <div class="card" style="margin-top: 30px; border-left: 4px solid var(--primary);">
-      <h3 style="font-size: 16px; margin-bottom: 6px;">💡 ¿Cómo empezar a vender este servicio en Salto?</h3>
-      <p style="font-size: 14px; color: var(--text-muted); line-height: 1.6;">
-        Abre el enlace de <strong>Pantalla del Cliente</strong> en tu teléfono celular, visita una barbería amiga en Salto y muéstrales cómo sus clientes pueden reservar un corte en 3 clics sin interrumpir su trabajo.
+    
+    <!-- Hero Principal -->
+    <div class="hero-commercial">
+      <div class="brand-badge" style="margin-bottom: 14px;">URUGUAY • SaaS 24/7</div>
+      <h1>Tu Barbería Abierta y Reservando Turnos las 24 Horas</h1>
+      <p>
+        Olvídate de responder cientos de mensajes de WhatsApp mientras estás cortando el pelo. Tus clientes eligen servicio, barbero y horario en 30 segundos.
       </p>
+
+      <div class="cta-row">
+        <a href="client.html?b=casa-brava" class="btn btn-primary" style="padding: 12px 24px; font-weight: 800;">
+          📱 Ver Demostración en Vivo
+        </a>
+        <a href="login.html" class="btn btn-secondary" style="padding: 12px 24px;">
+          🔐 Ingresar a mi Panel
+        </a>
+      </div>
+    </div>
+
+    <!-- Módulos y Beneficios -->
+    <div class="feature-grid">
+      
+      <div class="feature-box">
+        <div class="feature-icon">📲</div>
+        <h3 class="feature-title">App Móvil para tus Clientes</h3>
+        <p class="feature-desc">
+          Tus clientes entran directo desde Instagram, Google Maps o escaneando un Código QR en tu local. Sin descargar apps pesadas.
+        </p>
+      </div>
+
+      <div class="feature-box">
+        <div class="feature-icon">⚡</div>
+        <h3 class="feature-title">Promociones y Happy Hour</h3>
+        <p class="feature-desc">
+          Llena tus horarios valle (martes y miércoles por la mañana) con descuentos automáticos, programa tarjetas de fidelidad por puntos y premios de cumpleaños.
+        </p>
+      </div>
+
+      <div class="feature-box">
+        <div class="feature-icon">💵</div>
+        <h3 class="feature-title">Caja y Comisiones al Instante</h3>
+        <p class="feature-desc">
+          El sistema calcula automáticamente lo que le corresponde a cada barbero según su porcentaje de comisión y emite hojas de liquidación en un clic.
+        </p>
+      </div>
+
+      <div class="feature-box">
+        <div class="feature-icon">🛍️</div>
+        <h3 class="feature-title">Upselling de Productos</h3>
+        <p class="feature-desc">
+          Aumenta tu facturación ofreciendo pomadas, aceites y ceras directamente cuando el cliente está agendando su corte.
+        </p>
+      </div>
+
+    </div>
+
+    <!-- Caja de Prueba Rápida -->
+    <div class="preview-phone-box">
+      <h3 style="font-size: 18px; color: #fff; margin-bottom: 6px;">¿Quieres probar el sistema en tu celular?</h3>
+      <p style="font-size: 13px; color: var(--text-muted); max-width: 500px; margin: 0 auto 16px auto;">
+        Prueba cómo reserva un cliente real tocando el botón o escanéalo para verlo directamente en tu teléfono.
+      </p>
+      <div style="display: flex; justify-content: center; gap: 12px; flex-wrap: wrap;">
+        <a href="client.html?b=casa-brava" class="btn btn-primary btn-sm">Probar Reserva de Cliente ➔</a>
+        <a href="propuesta-comercial.html" class="btn btn-secondary btn-sm">Ver Planes y Precios UYU</a>
+      </div>
+    </div>
+
+    <div style="text-align: center; font-size: 12px; color: var(--text-muted); margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--border-color);">
+      MiTurnoBarber © 2026 • Plataforma SaaS de Gestión para Barberías • Salto, Uruguay
     </div>
 
   </div>
 
   <script src="app.js"></script>
-  <script>
-    function loadShopOptions() {
-      const shops = getShops();
-      const selector = document.getElementById('shopSelector');
-      const active = getActiveShop();
-      selector.innerHTML = shops.map(s => `
-        <option value="${s.id}" ${s.id === active.id ? 'selected' : ''}>
-          ${s.logoEmoji} ${s.name} (${s.address})
-        </option>
-      `).join('');
-    }
-
-    function changeDemoShop(shopId) {
-      setActiveShop(shopId);
-    }
-
-    window.onload = loadShopOptions;
-  </script>
 </body>
 </html>

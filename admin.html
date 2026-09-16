@@ -81,8 +81,8 @@
     </div>
     <div style="display: flex; gap: 8px;">
       <button onclick="openQrPosterModal()" class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px; border-color: var(--primary); color: var(--primary);">🖨️ Cartel QR Mostrador</button>
-      <a href="client.html" target="_blank" class="btn btn-primary" style="padding: 6px 12px; font-size: 12px;">📱 Ver App Cliente</a>
-      <a href="index.html" class="btn-secondary">✕ Salir</a>
+      <a id="btnTopClientApp" href="client.html" target="_blank" class="btn btn-primary" style="padding: 6px 12px; font-size: 12px;">📱 Ver App Cliente</a>
+      <button onclick="handleAdminLogout()" class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px; color: #ef4444; border-color: rgba(239,68,68,0.3);">🚪 Cerrar Sesión</button>
     </div>
   </header>
 
@@ -92,6 +92,7 @@
     <div class="nav-tabs" style="margin-top: 10px;">
       <button class="tab-btn active" onclick="switchAdminTab('tab-comisiones')">💵 Contabilidad y Comisiones</button>
       <button class="tab-btn" onclick="switchAdminTab('tab-servicios')">✂️ Cortes y Precios</button>
+      <button class="tab-btn" onclick="switchAdminTab('tab-promociones')">🎁 Promociones & Marketing</button>
       <button class="tab-btn" onclick="switchAdminTab('tab-estilo')">🎨 Color Flúor, Textos y Fondo</button>
       <button class="tab-btn" onclick="switchAdminTab('tab-turnos')">📅 Turnos del Día</button>
       <button class="tab-btn" onclick="switchAdminTab('tab-tienda')">🛍️ Tienda de Productos</button>
@@ -160,6 +161,125 @@
         <div id="adminServicesList">
           <!-- Servicios dinámicos -->
         </div>
+      </div>
+    </div>
+
+    <!-- PESTAÑA: PROMOCIONES & MARKETING -->
+    <div id="tab-promociones" class="tab-content" style="display: none;">
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <h3 class="card-title">🎁 Promociones, Fidelización & Marketing Automático</h3>
+            <p style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">
+              Activa y configura libremente estrategias comerciales para llenar horarios vacíos y premiar a tus clientes fieles.
+            </p>
+          </div>
+          <button class="btn btn-primary" onclick="saveAdminPromotions()" style="font-size: 12px; padding: 6px 14px;">
+            💾 Guardar Promociones
+          </button>
+        </div>
+
+        <!-- 1. Sistema de Puntos y Fidelización -->
+        <div style="background: var(--bg-input); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 16px; margin-bottom: 14px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="font-size: 20px;">🎖️</span>
+              <div>
+                <strong style="font-size: 14px; color: #fff;">1. Sistema de Fidelización por Puntos</strong>
+                <p style="font-size: 11px; color: var(--text-muted);">Premia a los clientes que regresan a cortarse el pelo periódicamente.</p>
+              </div>
+            </div>
+            <label class="switch" style="cursor: pointer;">
+              <input type="checkbox" id="promoPointsEnabled" style="width: 18px; height: 18px; accent-color: var(--primary);">
+            </label>
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; background: rgba(0,0,0,0.25); padding: 12px; border-radius: 8px;">
+            <div>
+              <label class="form-label" style="font-size: 11px;">Cortes requeridos para el premio:</label>
+              <input type="number" id="promoPointsCuts" min="2" max="20" class="form-input" value="5" style="padding: 6px 10px;">
+            </div>
+            <div>
+              <label class="form-label" style="font-size: 11px;">% Descuento en ese corte premio:</label>
+              <input type="number" id="promoPointsPct" min="5" max="100" class="form-input" value="50" style="padding: 6px 10px;">
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. Descuento por Cumpleaños -->
+        <div style="background: var(--bg-input); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 16px; margin-bottom: 14px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="font-size: 20px;">🎂</span>
+              <div>
+                <strong style="font-size: 14px; color: #fff;">2. Descuento Especial por Cumpleaños</strong>
+                <p style="font-size: 11px; color: var(--text-muted);">Aplica un descuento cuando el cliente se atienda en la semana de su cumpleaños.</p>
+              </div>
+            </div>
+            <label class="switch" style="cursor: pointer;">
+              <input type="checkbox" id="promoBirthdayEnabled" style="width: 18px; height: 18px; accent-color: var(--primary);">
+            </label>
+          </div>
+          <div style="background: rgba(0,0,0,0.25); padding: 12px; border-radius: 8px; max-width: 250px;">
+            <label class="form-label" style="font-size: 11px;">% Descuento de Cumpleaños:</label>
+            <input type="number" id="promoBirthdayPct" min="5" max="100" class="form-input" value="20" style="padding: 6px 10px;">
+          </div>
+        </div>
+
+        <!-- 3. Happy Hour / Horarios Valle -->
+        <div style="background: var(--bg-input); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 16px; margin-bottom: 14px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="font-size: 20px;">⚡</span>
+              <div>
+                <strong style="font-size: 14px; color: #fff;">3. Happy Hour / Tarifas Valle (Días y Horarios Específicos)</strong>
+                <p style="font-size: 11px; color: var(--text-muted);">Llena la barbería en horarios de baja demanda con descuento automático.</p>
+              </div>
+            </div>
+            <label class="switch" style="cursor: pointer;">
+              <input type="checkbox" id="promoHappyHourEnabled" style="width: 18px; height: 18px; accent-color: var(--primary);">
+            </label>
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; background: rgba(0,0,0,0.25); padding: 12px; border-radius: 8px;">
+            <div>
+              <label class="form-label" style="font-size: 11px;">% Descuento Happy Hour:</label>
+              <input type="number" id="promoHHPct" min="5" max="50" class="form-input" value="15" style="padding: 6px 10px;">
+            </div>
+            <div>
+              <label class="form-label" style="font-size: 11px;">Hora Desde:</label>
+              <input type="time" id="promoHHStart" class="form-input" value="09:00" style="padding: 6px 10px;">
+            </div>
+            <div>
+              <label class="form-label" style="font-size: 11px;">Hora Hasta:</label>
+              <input type="time" id="promoHHEnd" class="form-input" value="13:00" style="padding: 6px 10px;">
+            </div>
+          </div>
+          <div style="margin-top: 10px; font-size: 12px; color: #94a3b8;">
+            <span>Días activos:</span>
+            <label style="margin-left: 10px;"><input type="checkbox" id="hhDayMartes" checked> Martes</label>
+            <label style="margin-left: 10px;"><input type="checkbox" id="hhDayMiercoles" checked> Miércoles</label>
+            <label style="margin-left: 10px;"><input type="checkbox" id="hhDayJueves"> Jueves</label>
+          </div>
+        </div>
+
+        <!-- 4. Upselling de Productos en Reserva -->
+        <div style="background: var(--bg-input); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 16px;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="font-size: 20px;">🛍️</span>
+              <div>
+                <strong style="font-size: 14px; color: #fff;">4. Sugerencia de Productos (Upselling)</strong>
+                <p style="font-size: 11px; color: var(--text-muted);">Muestra la tarjeta opcional de pomadas, aceites y ceras cuando el cliente reserva.</p>
+              </div>
+            </div>
+            <label class="switch" style="cursor: pointer;">
+              <input type="checkbox" id="promoUpsellingEnabled" checked style="width: 18px; height: 18px; accent-color: var(--primary);">
+            </label>
+          </div>
+        </div>
+
+        <button class="btn btn-primary btn-block" onclick="saveAdminPromotions()" style="margin-top: 18px; padding: 12px; font-weight: 800;">
+          💾 Guardar Configuración de Promociones
+        </button>
       </div>
     </div>
 
@@ -573,11 +693,21 @@
   <script>
     let shop = null;
     let currentBgImage = '';
-    let selectedBrandColor = '#00ff88';
+    // Protección de sesión: Solo barberos autenticados con cuenta activa pueden ingresar
+    const currentSession = requireAuth('barber');
 
     function renderAdminDashboard() {
       try {
         shop = getActiveShop();
+        
+        // Verificar validez de cuenta y suscripción demo
+        const statusCheck = checkShopAccessStatus(shop);
+        if (!statusCheck.allowed) {
+          alert(statusCheck.message);
+          logoutUser();
+          return;
+        }
+
         selectedBrandColor = shop.brandColor || '#00ff88';
         currentBgImage = shop.bgImage || 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=800&q=80';
         
@@ -585,6 +715,9 @@
         applyShopFluorTheme(shop);
 
         document.getElementById('adminShopName').innerText = shop.name;
+
+        // Cargar Promociones
+        loadAdminPromotions();
 
         // Formulario de textos
         document.getElementById('custName').value = shop.name;
@@ -943,24 +1076,50 @@
           const rawPhone = (apt.clientPhone || '').replace(/\D/g, '');
           const waPhone = rawPhone.startsWith('0') ? '598' + rawPhone.slice(1) : (rawPhone.startsWith('598') ? rawPhone : '598' + rawPhone);
           const reminderMsg = encodeURIComponent(`¡Hola ${apt.clientName}! Te recordamos tu turno de ${apt.serviceName} con ${apt.barberName} para el día ${apt.date} a las ${apt.time} hs en ${shop.name}. ¡Te esperamos! 💈`);
+          const status = apt.status || 'confirmed';
+          const statusBadges = {
+            'pending': '<span style="background: rgba(234, 179, 8, 0.2); color: #eab308; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 700;">🟡 Pendiente</span>',
+            'confirmed': '<span style="background: rgba(34, 197, 94, 0.2); color: #22c55e; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 700;">🟢 Confirmado</span>',
+            'completed': '<span style="background: rgba(59, 130, 246, 0.2); color: #60a5fa; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 700;">🔵 Completado</span>',
+            'cancelled': '<span style="background: rgba(239, 68, 68, 0.2); color: #ef4444; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 700;">🔴 Cancelado</span>'
+          };
 
           return `
-            <div class="service-compact-card" style="align-items: flex-start;">
-              <div class="service-compact-info" style="flex: 1;">
+            <div class="service-compact-card" style="align-items: flex-start; flex-direction: column; gap: 8px;">
+              <div style="display: flex; justify-content: space-between; width: 100%; align-items: center;">
                 <div class="service-compact-name">${apt.clientName} (${apt.clientPhone})</div>
-                <div class="service-compact-desc">✂️ ${apt.serviceName} con <strong>${apt.barberName}</strong></div>
-                <div class="service-compact-duration">📅 ${apt.date} • ⏰ ${apt.time} hs</div>
-                <div style="margin-top: 8px;">
-                  <a href="https://wa.me/${waPhone}?text=${reminderMsg}" target="_blank" class="btn" style="background: rgba(37,211,102,0.15); border: 1px solid #25D366; color: #25D366; padding: 5px 10px; font-size: 11px; border-radius: 6px; text-decoration: none; display: inline-flex; align-items: center; gap: 5px;">
-                    💬 Enviar Recordatorio por WhatsApp
+                <div>${statusBadges[status] || statusBadges['confirmed']}</div>
+              </div>
+              <div class="service-compact-desc">✂️ ${apt.serviceName} con <strong>${apt.barberName}</strong></div>
+              <div class="service-compact-duration">📅 ${apt.date} • ⏰ ${apt.time} hs</div>
+              ${apt.discountApplied ? `<div style="font-size: 11px; color: var(--primary); font-weight: 700;">🎉 Descuento aplicado: -$ ${apt.discountAmount || 0} (${apt.promotionName || 'Promo'})</div>` : ''}
+              
+              <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 8px; margin-top: 4px; flex-wrap: wrap; gap: 6px;">
+                <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                  <button class="btn" style="background: rgba(34, 197, 94, 0.15); border: 1px solid #22c55e; color: #22c55e; padding: 4px 8px; font-size: 11px; border-radius: 4px; cursor: pointer;" onclick="handleAptStatus('${apt.id}', 'confirmed')">
+                    ✓ Confirmar
+                  </button>
+                  <button class="btn" style="background: rgba(59, 130, 246, 0.15); border: 1px solid #3b82f6; color: #60a5fa; padding: 4px 8px; font-size: 11px; border-radius: 4px; cursor: pointer;" onclick="handleAptStatus('${apt.id}', 'completed')">
+                    ✔️ Completar
+                  </button>
+                  <button class="btn" style="background: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444; color: #ef4444; padding: 4px 8px; font-size: 11px; border-radius: 4px; cursor: pointer;" onclick="handleAptStatus('${apt.id}', 'cancelled')">
+                    ✕ Cancelar
+                  </button>
+                  <a href="https://wa.me/${waPhone}?text=${reminderMsg}" target="_blank" class="btn" style="background: rgba(37,211,102,0.15); border: 1px solid #25D366; color: #25D366; padding: 4px 8px; font-size: 11px; border-radius: 4px; text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
+                    💬 WhatsApp
                   </a>
                 </div>
+                <div class="service-compact-price" style="font-size: 15px; font-weight: 800;">${formatMoneyUY(apt.price)}</div>
               </div>
-              <div class="service-compact-price" style="font-size: 16px;">${formatMoneyUY(apt.price)}</div>
             </div>
           `;
         }).join('');
       }
+    }
+
+    function handleAptStatus(aptId, newStatus) {
+      updateAppointmentStatus(aptId, newStatus);
+      renderAdminDashboard();
     }
 
     function updateLivePreview() {
@@ -1246,6 +1405,67 @@
     function handleToggleProductActive(productId) {
       toggleProductActive(shop.id, productId);
       renderAdminDashboard();
+    }
+
+    // =========================================================================
+    // CONFIGURACIÓN DE PROMOCIONES Y MARKETING
+    // =========================================================================
+    function loadAdminPromotions() {
+      const promos = shop.promotions || getDefaultPromotionsConfig();
+
+      if (document.getElementById('promoPointsEnabled')) {
+        document.getElementById('promoPointsEnabled').checked = !!promos.points?.enabled;
+        document.getElementById('promoPointsCuts').value = promos.points?.cutsRequired || 5;
+        document.getElementById('promoPointsPct').value = promos.points?.discountPct || 50;
+
+        document.getElementById('promoBirthdayEnabled').checked = !!promos.birthday?.enabled;
+        document.getElementById('promoBirthdayPct').value = promos.birthday?.discountPct || 20;
+
+        document.getElementById('promoHappyHourEnabled').checked = !!promos.happyHour?.enabled;
+        document.getElementById('promoHHPct').value = promos.happyHour?.discountPct || 15;
+        document.getElementById('promoHHStart').value = promos.happyHour?.timeStart || '09:00';
+        document.getElementById('promoHHEnd').value = promos.happyHour?.timeEnd || '13:00';
+
+        const days = promos.happyHour?.days || [2, 3];
+        if (document.getElementById('hhDayMartes')) document.getElementById('hhDayMartes').checked = days.includes(2);
+        if (document.getElementById('hhDayMiercoles')) document.getElementById('hhDayMiercoles').checked = days.includes(3);
+        if (document.getElementById('hhDayJueves')) document.getElementById('hhDayJueves').checked = days.includes(4);
+
+        document.getElementById('promoUpsellingEnabled').checked = (promos.upselling?.enabled !== false);
+      }
+    }
+
+    function saveAdminPromotions() {
+      const activeDays = [];
+      if (document.getElementById('hhDayMartes')?.checked) activeDays.push(2);
+      if (document.getElementById('hhDayMiercoles')?.checked) activeDays.push(3);
+      if (document.getElementById('hhDayJueves')?.checked) activeDays.push(4);
+
+      const promotionsConfig = {
+        points: {
+          enabled: document.getElementById('promoPointsEnabled').checked,
+          cutsRequired: Number(document.getElementById('promoPointsCuts').value) || 5,
+          discountPct: Number(document.getElementById('promoPointsPct').value) || 50
+        },
+        birthday: {
+          enabled: document.getElementById('promoBirthdayEnabled').checked,
+          discountPct: Number(document.getElementById('promoBirthdayPct').value) || 20
+        },
+        happyHour: {
+          enabled: document.getElementById('promoHappyHourEnabled').checked,
+          discountPct: Number(document.getElementById('promoHHPct').value) || 15,
+          days: activeDays,
+          timeStart: document.getElementById('promoHHStart').value || '09:00',
+          timeEnd: document.getElementById('promoHHEnd').value || '13:00'
+        },
+        upselling: {
+          enabled: document.getElementById('promoUpsellingEnabled').checked
+        }
+      };
+
+      updateShopPromotions(shop.id, promotionsConfig);
+      renderAdminDashboard();
+      alert('¡Configuración de Promociones & Marketing guardada con éxito!\nAhora se aplicará dinámicamente a todos los clientes que reserven.');
     }
 
     window.onload = renderAdminDashboard;

@@ -170,9 +170,9 @@
     const DAY_NAMES = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
 
     function initClientPage() {
-      // Soporte para parámetro ?shop= en la URL (para códigos QR y enlaces directos)
+      // Soporte para parámetro ?b= o ?shop= en la URL (para códigos QR, enlaces comerciales y multi-tenancy)
       const urlParams = new URLSearchParams(window.location.search);
-      const shopParam = urlParams.get('shop');
+      const shopParam = urlParams.get('b') || urlParams.get('shop');
       if (shopParam) {
         setActiveShop(shopParam);
       }
@@ -234,10 +234,12 @@
       }).join('');
       selectedBarber = currentShop.barbers ? currentShop.barbers[0] : null;
 
-      // Renderizar Tienda de Productos (si el módulo está activo para esta barbería)
+      // Renderizar Tienda de Productos (si el módulo está activo para esta barbería y habilitado por upselling)
       const storeCard = document.getElementById('clientStoreCard');
       const productsGrid = document.getElementById('clientProductsGrid');
-      if (currentShop.hasStore !== false) {
+      const upsellingEnabled = currentShop.promotions?.upselling?.enabled !== false;
+
+      if (currentShop.hasStore !== false && upsellingEnabled) {
         storeCard.style.display = 'block';
         const activeProds = (currentShop.products || []).filter(p => p.active !== false);
         if (activeProds.length > 0) {
@@ -322,6 +324,7 @@
       document.querySelectorAll('.service-compact-card').forEach(el => el.classList.remove('selected'));
       document.getElementById(`srv-${serviceId}`).classList.add('selected');
       selectedService = currentShop.services.find(s => s.id === serviceId);
+      renderTimeSlots();
     }
 
     function selectBarberItem(barberId) {
@@ -329,6 +332,7 @@
       document.getElementById(`barber-${barberId}`).classList.add('selected');
       selectedBarber = currentShop.barbers.find(b => b.id === barberId);
       validateBarberWorkingDay();
+      renderTimeSlots();
     }
 
     function onDateOrBarberChange() {
@@ -374,12 +378,21 @@
     function renderTimeSlots() {
       const slotsGrid = document.getElementById('timeSlotsGrid');
       selectedTime = DEFAULT_HOURS[0];
+      const dateVal = document.getElementById('bookingDate')?.value || '';
 
-      slotsGrid.innerHTML = DEFAULT_HOURS.map((h, idx) => `
-        <div class="time-slot ${idx === 0 ? 'selected' : ''}" onclick="selectTimeSlot('${h}', this)">
-          ${h}
-        </div>
-      `).join('');
+      const basePrice = selectedService ? Number(selectedService.price) : 450;
+
+      slotsGrid.innerHTML = DEFAULT_HOURS.map((h, idx) => {
+        const promo = calculateBookingPromotions(currentShop, basePrice, dateVal, h, '');
+        const isHH = promo.promotionName && promo.promotionName.includes('Happy Hour');
+
+        return `
+          <div class="time-slot ${idx === 0 ? 'selected' : ''}" onclick="selectTimeSlot('${h}', this)" style="position: relative;">
+            ${h}
+            ${isHH ? `<span style="display: block; font-size: 9px; color: #ffd700; font-weight: 800;">⚡ -${promo.discountAmount} UYU</span>` : ''}
+          </div>
+        `;
+      }).join('');
     }
 
     function handleBooking(e) {
@@ -399,7 +412,11 @@
         return;
       }
 
-      const totalPrice = Number(selectedService.price) + (selectedProduct ? Number(selectedProduct.price) : 0);
+      const baseServicePrice = Number(selectedService.price);
+      const promoResult = calculateBookingPromotions(currentShop, baseServicePrice, date, selectedTime, clientPhone);
+      const serviceFinalPrice = promoResult.finalPrice;
+      const productPrice = selectedProduct ? Number(selectedProduct.price) : 0;
+      const totalPrice = serviceFinalPrice + productPrice;
 
       const newAppointment = {
         shopId: currentShop.id,
@@ -410,9 +427,12 @@
         serviceId: selectedService.id,
         serviceName: selectedService.name,
         price: totalPrice,
+        discountApplied: promoResult.discountApplied,
+        discountAmount: promoResult.discountAmount,
+        promotionName: promoResult.promotionName,
         productId: selectedProduct ? selectedProduct.id : null,
         productName: selectedProduct ? selectedProduct.name : null,
-        productPrice: selectedProduct ? selectedProduct.price : 0,
+        productPrice: productPrice,
         date: date,
         time: selectedTime,
         status: 'confirmed'
@@ -452,12 +472,11 @@
       }
 
       const prodInfo = selectedProduct ? `<br>🛍️ <strong>Producto agregado:</strong> ${selectedProduct.name} (${formatMoneyUY(selectedProduct.price)})` : '';
+      const promoInfo = promoResult.discountApplied ? `<br>🎉 <strong style="color: var(--primary);">${promoResult.promotionName}: Descuento de -$ ${promoResult.discountAmount} UYU</strong>` : '';
 
       document.getElementById('modalSummary').innerHTML = `
-        <strong>${clientName}</strong>, tu turno para <strong>${selectedService.name}</strong> con <strong>${selectedBarber.name}</strong> quedó agendado para el <strong>${date} a las ${selectedTime} hs</strong>.${prodInfo}
+        <strong>${clientName}</strong>, tu turno para <strong>${selectedService.name}</strong> con <strong>${selectedBarber.name}</strong> quedó agendado para el <strong>${date} a las ${selectedTime} hs</strong>.${promoInfo}${prodInfo}
         <div style="font-size: 16px; font-weight: 800; color: var(--primary); margin-top: 10px;">Total a pagar: ${formatMoneyUY(totalPrice)}</div>
-      `;
-
       document.getElementById('successModal').classList.add('active');
     }
 

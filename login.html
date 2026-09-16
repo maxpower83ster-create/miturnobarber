@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Acceso Seguro | MiTurnoBarber</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .auth-wrapper {
+      min-height: 85vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px 16px;
+    }
+    .auth-card {
+      width: 100%;
+      max-width: 420px;
+      background: linear-gradient(145deg, #131722 0%, #0c0f16 100%);
+      border: 1px solid var(--border-gold);
+      border-radius: var(--radius);
+      padding: 32px 24px;
+      box-shadow: var(--shadow), 0 0 25px var(--primary-light);
+      position: relative;
+      overflow: hidden;
+    }
+    .auth-header {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+    .auth-badge {
+      font-size: 38px;
+      margin-bottom: 10px;
+      display: inline-block;
+      filter: drop-shadow(0 0 10px var(--primary-glow));
+    }
+    .auth-title {
+      font-size: 22px;
+      font-weight: 800;
+      color: #fff;
+      margin-bottom: 6px;
+    }
+    .auth-subtitle {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+    .auth-alert {
+      display: none;
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 12px;
+      margin-bottom: 16px;
+      line-height: 1.4;
+    }
+    .auth-alert.error {
+      display: block;
+      background: rgba(239, 68, 68, 0.15);
+      border: 1px solid #ef4444;
+      color: #fca5a5;
+    }
+    .auth-alert.warning {
+      display: block;
+      background: rgba(234, 179, 8, 0.15);
+      border: 1px solid #eab308;
+      color: #fef08a;
+    }
+    .auth-footer {
+      text-align: center;
+      margin-top: 20px;
+      font-size: 12px;
+      color: var(--text-muted);
+      border-top: 1px solid rgba(255,255,255,0.06);
+      padding-top: 16px;
+    }
+    .demo-creds {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px dashed rgba(255, 255, 255, 0.12);
+      border-radius: 8px;
+      padding: 10px 12px;
+      margin-top: 18px;
+      font-size: 11px;
+      color: #94a3b8;
+    }
+    .demo-creds strong {
+      color: var(--primary);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header mínimo -->
+  <header class="header">
+    <div class="logo-container">
+      <div class="logo-badge">💈</div>
+      <div class="logo-text">
+        <h1>MiTurnoBarber</h1>
+        <p>Acceso Seguro a Plataforma</p>
+      </div>
+    </div>
+    <a href="index.html" class="btn btn-secondary btn-sm">🏠 Inicio</a>
+  </header>
+
+  <div class="auth-wrapper">
+    <div class="auth-card">
+      <div class="auth-header">
+        <div class="auth-badge">🔐</div>
+        <h2 class="auth-title">Iniciar Sesión</h2>
+        <p class="auth-subtitle">Ingresa con tus credenciales asignadas</p>
+      </div>
+
+      <div id="authAlert" class="auth-alert"></div>
+
+      <form id="loginForm" onsubmit="handleLogin(event)">
+        <div class="form-group">
+          <label class="form-label">Correo Electrónico o Usuario:</label>
+          <input type="text" id="loginEmail" class="form-input" placeholder="ej: contacto@casabrava.com" required autocomplete="username">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Contraseña:</label>
+          <input type="password" id="loginPassword" class="form-input" placeholder="••••••••" required autocomplete="current-password">
+        </div>
+
+        <button type="submit" id="loginSubmitBtn" class="btn btn-primary btn-block" style="padding: 12px; font-weight: 800; margin-top: 10px;">
+          Ingresar al Panel Seguro ➔
+        </button>
+      </form>
+
+      <!-- Credenciales de muestra para pruebas -->
+      <div class="demo-creds">
+        <div style="font-weight: 700; margin-bottom: 4px; color: #fff;">🔑 Cuentas por Defecto:</div>
+        <div>👑 <strong>Super Admin:</strong> <code>admin@miturnobarber.com</code> | <code>admin123</code></div>
+        <div style="margin-top: 3px;">💈 <strong>Barbería Demo:</strong> <code>contacto@casabrava.com</code> | <code>barber123</code></div>
+      </div>
+
+      <div class="auth-footer">
+        ¿Aún no tienes una cuenta para tu barbería? <br>
+        <a href="index.html" style="color: var(--primary); text-decoration: none; font-weight: 700;">Ver Planes Comerciales y Demos</a>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+  <script>
+    function handleLogin(e) {
+      e.preventDefault();
+      const email = document.getElementById('loginEmail').value.trim();
+      const password = document.getElementById('loginPassword').value.trim();
+      const alertBox = document.getElementById('authAlert');
+      const submitBtn = document.getElementById('loginSubmitBtn');
+
+      alertBox.className = 'auth-alert';
+      alertBox.style.display = 'none';
+
+      submitBtn.disabled = true;
+      submitBtn.innerText = 'Verificando credenciales...';
+
+      setTimeout(() => {
+        const result = authenticateUser(email, password);
+
+        if (!result.success) {
+          alertBox.className = 'auth-alert error';
+          alertBox.innerText = result.message || 'Credenciales incorrectas. Verifica correo y contraseña.';
+          alertBox.style.display = 'block';
+          submitBtn.disabled = false;
+          submitBtn.innerText = 'Ingresar al Panel Seguro ➔';
+          return;
+        }
+
+        // Si es SuperAdmin
+        if (result.role === 'superadmin') {
+          window.location.href = 'superadmin.html';
+          return;
+        }
+
+        // Si es Barbería
+        if (result.role === 'barber') {
+          // Validar estado de la cuenta (activo, suspendido, demo expirada)
+          const shop = result.shop;
+          const statusCheck = checkShopAccessStatus(shop);
+
+          if (!statusCheck.allowed) {
+            alertBox.className = 'auth-alert warning';
+            alertBox.innerHTML = `⚠️ <strong>Acceso Restringido:</strong> ${statusCheck.message}<br><br>📱 Contacta a soporte para reactivar tu cuenta: <strong>WhatsApp: 598 99 123 456</strong>`;
+            alertBox.style.display = 'block';
+            submitBtn.disabled = false;
+            submitBtn.innerText = 'Ingresar al Panel Seguro ➔';
+            logoutSession();
+            return;
+          }
+
+          window.location.href = `admin.html?shop=${encodeURIComponent(shop.id)}`;
+        }
+      }, 350);
+    }
+
+    window.onload = function() {
+      // Si ya hay sesión activa, redirigir directo
+      const session = getCurrentSession();
+      if (session) {
+        if (session.role === 'superadmin') {
+          window.location.href = 'superadmin.html';
+        } else if (session.role === 'barber' && session.shopId) {
+          const shops = getShops();
+          const shop = shops.find(s => s.id === session.shopId);
+          if (shop) {
+            const check = checkShopAccessStatus(shop);
+            if (check.allowed) {
+              window.location.href = `admin.html?shop=${encodeURIComponent(shop.id)}`;
+            }
+          }
+        }
+      }
+
+      // Si viene con mensaje de redirección
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('msg') === 'unauthorized') {
+        const alertBox = document.getElementById('authAlert');
+        alertBox.className = 'auth-alert warning';
+        alertBox.innerText = '🔒 Debes iniciar sesión para acceder al panel.';
+        alertBox.style.display = 'block';
+      } else if (urlParams.get('msg') === 'expired') {
+        const alertBox = document.getElementById('authAlert');
+        alertBox.className = 'auth-alert error';
+        alertBox.innerText = '⏱️ Tu período de prueba o suscripción ha vencido. Contacta al administrador para continuar.';
+        alertBox.style.display = 'block';
+      }
+    };
+  </script>
+</body>
+</html>

@@ -1,11 +1,13 @@
 // =========================================================================
-// BarberFlow Salto - Lógica con Colores Flúor Dinámicos y Editor de Precios
+// MiTurnoBarber - Motor Central SaaS Multi-Tenancy & Persistencia
 // =========================================================================
 
 const STORAGE_KEYS = {
-  SHOPS: 'barber_saas_shops_v8',
-  APPOINTMENTS: 'barber_saas_appointments_v8',
-  ACTIVE_SHOP_ID: 'barber_saas_active_shop_id_v8'
+  SHOPS: 'miturnobarber_shops_v9',
+  APPOINTMENTS: 'miturnobarber_appointments_v9',
+  ACTIVE_SHOP_ID: 'miturnobarber_active_shop_id_v9',
+  AUTH_SESSION: 'miturnobarber_auth_session_v9',
+  CLOUD_CONFIG: 'miturnobarber_cloud_config_v9'
 };
 
 // Paleta de Colores Flúor Neón Disponibles
@@ -18,10 +20,21 @@ const FLUOR_THEMES = [
   { id: 'purple', name: 'Púrpura Ultravioleta', color: '#a855f7', glow: 'rgba(168, 85, 247, 0.45)', light: 'rgba(168, 85, 247, 0.15)', border: 'rgba(168, 85, 247, 0.4)' }
 ];
 
+// Cuenta Maestra SuperAdmin
+const SUPERADMIN_ACCOUNT = {
+  email: 'admin@miturnobarber.com',
+  password: 'admin123',
+  name: 'Dueño de MiTurnoBarber',
+  role: 'superadmin'
+};
+
 const DEFAULT_SHOPS = [
   {
     id: 'casa-brava',
+    slug: 'casa-brava',
     name: 'Casa Brava',
+    email: 'contacto@casabrava.com',
+    password: 'barber123', // Contraseña para el panel
     subtitle: 'BARBERÍA & CLUB MASCULINO',
     heroTitle: 'Tu estilo habla por ti.',
     heroHighlight: 'Defínelo con expertos.',
@@ -29,15 +42,24 @@ const DEFAULT_SHOPS = [
     address: 'Calle Uruguay 850, Salto',
     phone: '59899123456',
     notificationPreference: 'both', // 'owner', 'barber', 'both'
-    status: 'active',
+    status: 'active', // 'active', 'suspended', 'trial'
+    trialDays: 14,
+    trialEndsAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
     monthlyFee: 1800,
-    brandColor: '#00ff88', // Verde Flúor por defecto
+    plan: 'pro',
+    brandColor: '#00ff88',
     bgImage: 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=800&q=80',
     workingHours: {
       start: '09:00',
       end: '20:00',
       intervalMinutes: 45,
       daysOpen: ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado']
+    },
+    promotions: {
+      pointsSystem: { enabled: true, cutsRequired: 5, discountPercent: 50 },
+      birthday: { enabled: true, discountPercent: 20 },
+      happyHour: { enabled: true, discountPercent: 15, days: ['Martes', 'Miércoles'], startHour: '09:00', endHour: '13:00' },
+      upselling: { enabled: true }
     },
     barbers: [
       { 
@@ -47,7 +69,7 @@ const DEFAULT_SHOPS = [
         photo: 'https://images.unsplash.com/photo-1583863788434-e58a36330cf0?w=200&q=80',
         rating: '4.9 (128)',
         commissionRate: 0.55,
-        daysOff: [0], // Domingo libre (0: Dom, 1: Lun, etc.)
+        daysOff: [0], // Domingo libre
         phone: '59899111222'
       },
       { 
@@ -100,7 +122,7 @@ const DEFAULT_SHOPS = [
       }
     ],
     hasStore: true,
-    plan: 'pro', // 'standard', 'pro', 'vip', 'lifetime'
+    plan: 'pro',
     products: [
       { 
         id: 'p1', 
@@ -142,31 +164,34 @@ const DEFAULT_APPOINTMENTS = [
     serviceId: 's3',
     serviceName: 'Combo Completo (Pelo + Barba)',
     price: 700,
+    discountApplied: 0,
+    promoType: null,
+    productName: null,
+    productPrice: 0,
     date: new Date().toISOString().split('T')[0],
     time: '16:00',
-    status: 'confirmed',
+    status: 'confirmed', // 'confirmed', 'completed', 'cancelled'
     createdAt: new Date().toISOString()
   }
 ];
 
-function encodeShopData(shop) {
-  try {
-    return encodeURIComponent(btoa(unescape(encodeURIComponent(JSON.stringify(shop)))));
-  } catch (e) {
-    return '';
-  }
-}
-
-function decodeShopData(str) {
-  try {
-    return JSON.parse(decodeURIComponent(escape(atob(decodeURIComponent(str)))));
-  } catch (e) {
-    return null;
-  }
-}
+// =========================================================================
+// PERSISTENCIA E INICIALIZACIÓN
+// =========================================================================
 
 function initDB() {
-  // Sincronización automática si el enlace trae datos de la barbería (?setup=)
+  // 1. Migración o carga inicial
+  if (!localStorage.getItem(STORAGE_KEYS.SHOPS)) {
+    localStorage.setItem(STORAGE_KEYS.SHOPS, JSON.stringify(DEFAULT_SHOPS));
+  }
+  if (!localStorage.getItem(STORAGE_KEYS.APPOINTMENTS)) {
+    localStorage.setItem(STORAGE_KEYS.APPOINTMENTS, JSON.stringify(DEFAULT_APPOINTMENTS));
+  }
+  if (!localStorage.getItem(STORAGE_KEYS.ACTIVE_SHOP_ID)) {
+    localStorage.setItem(STORAGE_KEYS.ACTIVE_SHOP_ID, 'casa-brava');
+  }
+
+  // 2. Comprobar parámetro ?setup= o ?import= si viene por URL
   try {
     const urlParams = new URLSearchParams(window.location.search);
     const setupParam = urlParams.get('setup');
@@ -187,29 +212,38 @@ function initDB() {
   } catch (err) {
     console.warn('Aviso sincronización enlace:', err);
   }
-
-  if (!localStorage.getItem(STORAGE_KEYS.SHOPS)) {
-    localStorage.setItem(STORAGE_KEYS.SHOPS, JSON.stringify(DEFAULT_SHOPS));
-  }
-  if (!localStorage.getItem(STORAGE_KEYS.APPOINTMENTS)) {
-    localStorage.setItem(STORAGE_KEYS.APPOINTMENTS, JSON.stringify(DEFAULT_APPOINTMENTS));
-  }
-  if (!localStorage.getItem(STORAGE_KEYS.ACTIVE_SHOP_ID)) {
-    localStorage.setItem(STORAGE_KEYS.ACTIVE_SHOP_ID, 'casa-brava');
-  }
 }
 
 function getShops() {
   initDB();
   const shops = JSON.parse(localStorage.getItem(STORAGE_KEYS.SHOPS) || '[]');
   const list = shops.length > 0 ? shops : DEFAULT_SHOPS;
-  
-  // Compatibilidad hacia atrás: asegurar daysOff, isPromo, notificationPreference, barber.phone, hasStore y products
+
+  // Compatibilidad hacia atrás: asegurar promociones, email, password, status y trial
   list.forEach(shop => {
+    if (!shop.slug) shop.slug = shop.id;
+    if (!shop.email) shop.email = `contacto@${shop.slug || 'barberia'}.com`;
+    if (!shop.password) shop.password = 'barber123';
+    if (!shop.status) shop.status = 'active';
+    if (!shop.trialDays) shop.trialDays = 14;
+    if (!shop.trialEndsAt) {
+      shop.trialEndsAt = new Date(Date.now() + (shop.trialDays || 14) * 24 * 60 * 60 * 1000).toISOString();
+    }
     if (!shop.notificationPreference) shop.notificationPreference = 'both';
     if (!shop.phone) shop.phone = '59899123456';
     if (shop.hasStore === undefined) shop.hasStore = true;
     if (!shop.plan) shop.plan = 'pro';
+    
+    // Promociones y Marketing
+    if (!shop.promotions) {
+      shop.promotions = {
+        pointsSystem: { enabled: true, cutsRequired: 5, discountPercent: 50 },
+        birthday: { enabled: true, discountPercent: 20 },
+        happyHour: { enabled: true, discountPercent: 15, days: ['Martes', 'Miércoles'], startHour: '09:00', endHour: '13:00' },
+        upselling: { enabled: true }
+      };
+    }
+
     if (!shop.products || shop.products.length === 0) {
       shop.products = [
         { id: 'p1', name: 'Pomada Matte Gold (Fijación Fuerte)', price: 350, desc: 'Efecto seco sin brillo, ideal para degradés modernos y peinados texturados.', photo: 'https://images.unsplash.com/photo-1597854710119-a6a4220b33b9?w=160&q=80', active: true },
@@ -217,12 +251,14 @@ function getShops() {
         { id: 'p3', name: 'Cera en Polvo Volumen & Textura', price: 400, desc: 'Aporta volumen instantáneo en la raíz con sensación ligera y mate.', photo: 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=160&q=80', active: true }
       ];
     }
+
     if (shop.barbers) {
       shop.barbers.forEach((b, idx) => {
-        if (!b.daysOff) b.daysOff = b.id === 'b2' ? [1] : [0]; // default: domingo o lunes
+        if (!b.daysOff) b.daysOff = b.id === 'b2' ? [1] : [0];
         if (!b.phone) b.phone = idx === 0 ? '59899111222' : '59899333444';
       });
     }
+
     if (shop.services) {
       shop.services.forEach(s => {
         if (s.isPromo === undefined) s.isPromo = s.id === 's3';
@@ -233,9 +269,387 @@ function getShops() {
   return list;
 }
 
-// ==========================================
-// GESTIÓN DE TIENDA Y PRODUCTOS DE BARBERÍA
-// ==========================================
+function saveShops(shops) {
+  localStorage.setItem(STORAGE_KEYS.SHOPS, JSON.stringify(shops));
+}
+
+function getActiveShop() {
+  initDB();
+  const shops = getShops();
+  const urlParams = new URLSearchParams(window.location.search);
+  
+  // Soporte paramétrico múltiple: ?b=slug-barberia o ?shop=slug-barberia
+  const shopParam = urlParams.get('b') || urlParams.get('shop');
+
+  if (shopParam) {
+    const cleanQuery = shopParam.toLowerCase().trim();
+    const found = shops.find(s => 
+      (s.id && s.id.toLowerCase() === cleanQuery) ||
+      (s.slug && s.slug.toLowerCase() === cleanQuery) ||
+      (s.name && s.name.toLowerCase().replace(/\s+/g, '-') === cleanQuery)
+    );
+
+    if (found) {
+      localStorage.setItem(STORAGE_KEYS.ACTIVE_SHOP_ID, found.id);
+      return found;
+    }
+  }
+
+  const activeId = localStorage.getItem(STORAGE_KEYS.ACTIVE_SHOP_ID) || 'casa-brava';
+  return shops.find(s => s.id === activeId) || shops[0] || DEFAULT_SHOPS[0];
+}
+
+function setActiveShop(id) {
+  localStorage.setItem(STORAGE_KEYS.ACTIVE_SHOP_ID, id);
+}
+
+// =========================================================================
+// SISTEMA DE AUTENTICACIÓN Y SEGURIDAD (SESSION & LOGIN)
+// =========================================================================
+
+function authenticateUser(email, password) {
+  const cleanEmail = (email || '').toLowerCase().trim();
+  const cleanPass = (password || '').trim();
+
+  // 1. Verificar SuperAdmin
+  if (cleanEmail === SUPERADMIN_ACCOUNT.email && cleanPass === SUPERADMIN_ACCOUNT.password) {
+    const session = {
+      role: 'superadmin',
+      email: cleanEmail,
+      name: SUPERADMIN_ACCOUNT.name,
+      token: 'sa_' + Date.now(),
+      loginAt: new Date().toISOString()
+    };
+    localStorage.setItem(STORAGE_KEYS.AUTH_SESSION, JSON.stringify(session));
+    return { success: true, role: 'superadmin', session };
+  }
+
+  // 2. Verificar Barberías Clientes
+  const shops = getShops();
+  const shop = shops.find(s => (s.email || '').toLowerCase().trim() === cleanEmail);
+
+  if (!shop) {
+    return { success: false, message: 'No existe ninguna cuenta registrada con este correo.' };
+  }
+
+  if (shop.password !== cleanPass) {
+    return { success: false, message: 'La contraseña ingresada es incorrecta.' };
+  }
+
+  const session = {
+    role: 'barber',
+    shopId: shop.id,
+    shopSlug: shop.slug || shop.id,
+    shopName: shop.name,
+    email: cleanEmail,
+    token: 'bk_' + Date.now(),
+    loginAt: new Date().toISOString()
+  };
+
+  localStorage.setItem(STORAGE_KEYS.AUTH_SESSION, JSON.stringify(session));
+  return { success: true, role: 'barber', shop, session };
+}
+
+function getCurrentSession() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.AUTH_SESSION);
+    return raw ? JSON.parse(raw) : null;
+  } catch (e) {
+    return null;
+  }
+}
+
+function logoutSession() {
+  localStorage.removeItem(STORAGE_KEYS.AUTH_SESSION);
+}
+
+// Control de Acceso y Bloqueo de Cuentas (Demos y Suscripciones)
+function checkShopAccessStatus(shop) {
+  if (!shop) return { allowed: false, message: 'Barbería no encontrada.' };
+
+  if (shop.status === 'suspended') {
+    return {
+      allowed: false,
+      reason: 'suspended',
+      message: 'Esta barbería se encuentra suspendida temporalmente por administración.'
+    };
+  }
+
+  if (shop.status === 'trial') {
+    const now = new Date();
+    const trialEnd = new Date(shop.trialEndsAt || 0);
+
+    if (now > trialEnd) {
+      return {
+        allowed: false,
+        reason: 'expired',
+        message: `Tu período de prueba gratuita de ${shop.trialDays || 7} días ha finalizado el ${trialEnd.toLocaleDateString('es-UY')}.`
+      };
+    }
+  }
+
+  return { allowed: true, status: shop.status };
+}
+
+function requireAuth(allowedRole = 'any') {
+  const session = getCurrentSession();
+
+  if (!session) {
+    window.location.href = 'login.html?msg=unauthorized';
+    return null;
+  }
+
+  if (allowedRole === 'superadmin' && session.role !== 'superadmin') {
+    window.location.href = 'login.html?msg=unauthorized';
+    return null;
+  }
+
+  if (allowedRole === 'barber' && session.role !== 'barber') {
+    window.location.href = 'login.html?msg=unauthorized';
+    return null;
+  }
+
+  // Si es barbero, verificar que su tienda esté activa
+  if (session.role === 'barber') {
+    const shops = getShops();
+    const shop = shops.find(s => s.id === session.shopId);
+    const check = checkShopAccessStatus(shop);
+    if (!check.allowed) {
+      logoutSession();
+      window.location.href = 'login.html?msg=expired';
+      return null;
+    }
+  }
+
+  return session;
+}
+
+// =========================================================================
+// GESTIÓN DE TURNOS / APPOINTMENTS (ALTA, BAJA, CONFIRMACIÓN, CANCELACIÓN)
+// =========================================================================
+
+function getAppointments(shopId = null) {
+  initDB();
+  const apts = JSON.parse(localStorage.getItem(STORAGE_KEYS.APPOINTMENTS) || '[]');
+  if (shopId) {
+    return apts.filter(a => a.shopId === shopId);
+  }
+  return apts;
+}
+
+function saveAppointment(apt) {
+  const apts = getAppointments();
+  apt.id = apt.id || ('apt-' + Date.now());
+  apt.code = apt.code || ('CB-' + Math.floor(1000 + Math.random() * 9000));
+  apt.status = apt.status || 'confirmed';
+  apt.createdAt = apt.createdAt || new Date().toISOString();
+  
+  apts.unshift(apt);
+  localStorage.setItem(STORAGE_KEYS.APPOINTMENTS, JSON.stringify(apts));
+  return apt;
+}
+
+function updateAppointmentStatus(appointmentId, newStatus) {
+  const apts = getAppointments();
+  const apt = apts.find(a => a.id === appointmentId);
+  if (apt) {
+    apt.status = newStatus; // 'confirmed', 'completed', 'cancelled'
+    localStorage.setItem(STORAGE_KEYS.APPOINTMENTS, JSON.stringify(apts));
+    return true;
+  }
+  return false;
+}
+
+function deleteAppointment(appointmentId) {
+  let apts = getAppointments();
+  const initialLen = apts.length;
+  apts = apts.filter(a => a.id !== appointmentId);
+  if (apts.length !== initialLen) {
+    localStorage.setItem(STORAGE_KEYS.APPOINTMENTS, JSON.stringify(apts));
+    return true;
+  }
+  return false;
+}
+
+// =========================================================================
+// MÓDULO DE PROMOCIONES Y MARKETING (PUNTOS, CUMPLEAÑOS, HAPPY HOUR, UPSELLING)
+// =========================================================================
+
+function updateShopPromotions(shopId, promotionsData) {
+  const shops = getShops();
+  const shop = shops.find(s => s.id === shopId);
+  if (shop) {
+    shop.promotions = Object.assign({}, shop.promotions || {}, promotionsData);
+    saveShops(shops);
+    return true;
+  }
+  return false;
+}
+
+// Calcula promociones aplicables para una reserva en client.html
+function calculateBookingPromotions(shop, clientPhone, bookingDateStr, bookingTimeStr, basePrice) {
+  let discount = 0;
+  let promoApplied = null;
+  const promoConfig = shop.promotions || {};
+
+  // 1. Happy Hour / Horarios Valle
+  if (promoConfig.happyHour && promoConfig.happyHour.enabled) {
+    const hh = promoConfig.happyHour;
+    const dateObj = new Date(bookingDateStr + 'T12:00:00');
+    const dayNames = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+    const dayName = dayNames[dateObj.getDay()];
+
+    if (hh.days && hh.days.includes(dayName)) {
+      if (bookingTimeStr >= (hh.startHour || '09:00') && bookingTimeStr <= (hh.endHour || '13:00')) {
+        const pct = Number(hh.discountPercent || 15);
+        discount = Math.round(basePrice * (pct / 100));
+        promoApplied = {
+          type: 'happyHour',
+          name: `⚡ Tarifa Valle / Happy Hour (${pct}% OFF)`,
+          discount
+        };
+      }
+    }
+  }
+
+  // 2. Sistema de Fidelización por Puntos (Cortes Acumulados)
+  if (!promoApplied && promoConfig.pointsSystem && promoConfig.pointsSystem.enabled) {
+    const ps = promoConfig.pointsSystem;
+    const cleanPhone = (clientPhone || '').replace(/\D/g, '');
+    if (cleanPhone.length >= 8) {
+      const clientHistory = getAppointments(shop.id).filter(a => 
+        (a.clientPhone || '').replace(/\D/g, '') === cleanPhone && a.status === 'completed'
+      );
+      const req = Number(ps.cutsRequired || 5);
+      if (clientHistory.length > 0 && (clientHistory.length % req === 0)) {
+        const pct = Number(ps.discountPercent || 50);
+        discount = Math.round(basePrice * (pct / 100));
+        promoApplied = {
+          type: 'points',
+          name: `🎖️ Premio Fidelidad por ${req}º corte (${pct}% OFF)`,
+          discount
+        };
+      }
+    }
+  }
+
+  return {
+    discount,
+    finalPrice: Math.max(0, basePrice - discount),
+    promoApplied
+  };
+}
+
+// =========================================================================
+// GESTIÓN COMERCIAL SUPERADMIN (DEMOS, FECHAS, ACCESOS)
+// =========================================================================
+
+function createNewBarberShopAccount(shopData) {
+  const shops = getShops();
+  const slug = (shopData.slug || shopData.name.toLowerCase())
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '') || ('shop-' + Date.now());
+
+  const trialDays = Number(shopData.trialDays || 7);
+  const trialEndsAt = new Date(Date.now() + trialDays * 24 * 60 * 60 * 1000).toISOString();
+
+  const newShop = {
+    id: slug,
+    slug: slug,
+    name: shopData.name,
+    email: shopData.email || `contacto@${slug}.com`,
+    password: shopData.password || 'barber123',
+    subtitle: 'BARBERÍA & ESTILO',
+    heroTitle: 'Tu estilo habla por ti.',
+    heroHighlight: 'Defínelo con expertos.',
+    tagline: 'Tradición en navaja y los mejores degradés modernos de Salto.',
+    address: shopData.address || 'Salto, Uruguay',
+    phone: shopData.phone || '59899123456',
+    status: shopData.status || 'trial', // 'trial', 'active', 'suspended'
+    trialDays: trialDays,
+    trialEndsAt: trialEndsAt,
+    monthlyFee: Number(shopData.monthlyFee || 1900),
+    plan: shopData.plan || 'pro',
+    hasStore: shopData.hasStore !== undefined ? Boolean(shopData.hasStore) : true,
+    logoEmoji: shopData.logoEmoji || '💈',
+    brandColor: '#00ff88',
+    promotions: {
+      pointsSystem: { enabled: true, cutsRequired: 5, discountPercent: 50 },
+      birthday: { enabled: true, discountPercent: 20 },
+      happyHour: { enabled: true, discountPercent: 15, days: ['Martes', 'Miércoles'], startHour: '09:00', endHour: '13:00' },
+      upselling: { enabled: true }
+    },
+    workingHours: {
+      start: '09:00',
+      end: '20:00',
+      intervalMinutes: 45,
+      daysOpen: ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado']
+    },
+    barbers: [
+      { id: 'b-' + Date.now(), name: 'Barbero Titular', photo: 'https://images.unsplash.com/photo-1583863788434-e58a36330cf0?w=200&q=80', role: 'Barbero Titular • Fade', commissionRate: 0.50, daysOff: [0], phone: shopData.phone }
+    ],
+    services: [
+      { id: 's-1', name: 'Corte Clásico & Fade', price: 450, duration: '30 min', desc: 'Corte profesional con degradé y peinado', photo: 'https://images.unsplash.com/photo-1622286342621-4bd786c2447c?w=160&q=80', isPromo: false },
+      { id: 's-2', name: 'Ritual Barba Tradicional', price: 350, duration: '30 min', desc: 'Perfilado a navaja y toalla caliente', photo: 'https://images.unsplash.com/photo-1621605815971-fbc98d665033?w=160&q=80', isPromo: false },
+      { id: 's-3', name: 'Combo Completo (Pelo + Barba)', price: 700, duration: '60 min', desc: 'Experiencia completa corte y barba', photo: 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=160&q=80', isPromo: true }
+    ],
+    products: [
+      { id: 'p-1', name: 'Pomada Matte Gold (Fijación Fuerte)', price: 350, desc: 'Fijación fuerte y acabado natural mate', photo: 'https://images.unsplash.com/photo-1597854710119-a6a4220b33b9?w=160&q=80', active: true },
+      { id: 'p-2', name: 'Aceite Esencial para Barba', price: 320, desc: 'Hidratación con aroma a cedro noble', photo: 'https://images.unsplash.com/photo-1626806787461-102c1bfaaea1?w=160&q=80', active: true }
+    ]
+  };
+
+  const existingIdx = shops.findIndex(s => s.id === slug);
+  if (existingIdx >= 0) {
+    shops[existingIdx] = newShop;
+  } else {
+    shops.push(newShop);
+  }
+
+  saveShops(shops);
+  return newShop;
+}
+
+function updateShopAccountStatus(shopId, newStatus, extraTrialDays = 0) {
+  const shops = getShops();
+  const shop = shops.find(s => s.id === shopId);
+  if (shop) {
+    shop.status = newStatus;
+    if (newStatus === 'trial' && extraTrialDays > 0) {
+      shop.trialDays = extraTrialDays;
+      shop.trialEndsAt = new Date(Date.now() + extraTrialDays * 24 * 60 * 60 * 1000).toISOString();
+    }
+    saveShops(shops);
+    return true;
+  }
+  return false;
+}
+
+// =========================================================================
+// URLS PARAMÉTRICAS Y CÓDIGOS QR MULTI-TENANCY
+// =========================================================================
+
+function getShopBookingUrl(shopId) {
+  const origin = window.location.origin;
+  const path = window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/') + 1);
+  return `${origin}${path}client.html?b=${encodeURIComponent(shopId || 'casa-brava')}`;
+}
+
+function getShopAdminUrl(shopId) {
+  const origin = window.location.origin;
+  const path = window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/') + 1);
+  return `${origin}${path}admin.html?shop=${encodeURIComponent(shopId || 'casa-brava')}`;
+}
+
+function getShopQrCodeUrl(shopId, size = 300) {
+  const bookingUrl = getShopBookingUrl(shopId);
+  return `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(bookingUrl)}&format=png&margin=10`;
+}
+
+// =========================================================================
+// GESTIÓN DE TIENDA Y PRODUCTOS
+// =========================================================================
 
 function addNewProduct(shopId, productData) {
   const shops = getShops();
@@ -290,7 +704,6 @@ function toggleProductActive(shopId, productId) {
   return false;
 }
 
-// Actualizar módulos del SaaS (Super Admin)
 function updateShopSaaSPlan(shopId, planName, monthlyFee, hasStore) {
   const shops = getShops();
   const shop = shops.find(s => s.id === shopId);
@@ -304,7 +717,6 @@ function updateShopSaaSPlan(shopId, planName, monthlyFee, hasStore) {
   return false;
 }
 
-// Configurar preferencias de notificación (dueño, barbero, ambos)
 function updateNotificationSettings(shopId, preference, ownerPhone) {
   const shops = getShops();
   const shop = shops.find(s => s.id === shopId);
@@ -317,7 +729,6 @@ function updateNotificationSettings(shopId, preference, ownerPhone) {
   return false;
 }
 
-// Actualizar teléfono de WhatsApp particular de un barbero
 function updateBarberPhone(shopId, barberId, phone) {
   const shops = getShops();
   const shop = shops.find(s => s.id === shopId);
@@ -330,52 +741,8 @@ function updateBarberPhone(shopId, barberId, phone) {
     }
   }
   return false;
-function getActiveShop() {
-  const shops = getShops();
-  const urlParams = new URLSearchParams(window.location.search);
-  const shopParam = urlParams.get('shop');
-
-  if (shopParam) {
-    const found = shops.find(s => s.id === shopParam || s.name.toLowerCase().replace(/\s+/g, '-') === shopParam.toLowerCase());
-    if (found) {
-      localStorage.setItem(STORAGE_KEYS.ACTIVE_SHOP_ID, found.id);
-      return found;
-    }
-  }
-
-  const activeId = localStorage.getItem(STORAGE_KEYS.ACTIVE_SHOP_ID) || 'casa-brava';
-  return shops.find(s => s.id === activeId) || shops[0] || DEFAULT_SHOPS[0];
 }
 
-function setActiveShop(id) {
-  localStorage.setItem(STORAGE_KEYS.ACTIVE_SHOP_ID, id);
-}
-
-function saveShops(shops) {
-  localStorage.setItem(STORAGE_KEYS.SHOPS, JSON.stringify(shops));
-}
-
-// Obtener URL de reservas para el cliente (limpia y perfecta para QR)
-function getShopBookingUrl(shopId) {
-  const origin = window.location.origin;
-  const path = window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/') + 1);
-  return `${origin}${path}client.html?shop=${encodeURIComponent(shopId || 'casa-brava')}`;
-}
-
-// Obtener URL del panel de administración del dueño
-function getShopAdminUrl(shopId) {
-  const origin = window.location.origin;
-  const path = window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/') + 1);
-  return `${origin}${path}admin.html?shop=${encodeURIComponent(shopId || 'casa-brava')}`;
-}
-
-// Generador de QR oficial en tiempo real (alta calidad y nítido)
-function getShopQrCodeUrl(shopId, size = 300) {
-  const bookingUrl = getShopBookingUrl(shopId);
-  return `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(bookingUrl)}&format=png&margin=10`;
-}
-
-// Alternar estado de Promoción / Destacado en un corte
 function toggleServicePromo(shopId, serviceId) {
   const shops = getShops();
   const shop = shops.find(s => s.id === shopId);
@@ -390,7 +757,6 @@ function toggleServicePromo(shopId, serviceId) {
   return false;
 }
 
-// Actualizar días de descanso de un barbero (ej: [0] para Domingo, [1] para Lunes)
 function updateBarberDaysOff(shopId, barberId, daysOffArray) {
   const shops = getShops();
   const shop = shops.find(s => s.id === shopId);
@@ -405,7 +771,6 @@ function updateBarberDaysOff(shopId, barberId, daysOffArray) {
   return false;
 }
 
-// Aplicar Color Flúor Dinámico a la página en tiempo real
 function applyShopFluorTheme(shop) {
   const colorHex = shop.brandColor || '#00ff88';
   const theme = FLUOR_THEMES.find(t => t.color.toLowerCase() === colorHex.toLowerCase()) || {
@@ -422,7 +787,6 @@ function applyShopFluorTheme(shop) {
   document.documentElement.style.setProperty('--border-gold', theme.border);
 }
 
-// Actualizar comisión de un barbero / estilista (0% a 100%)
 function updateBarberCommission(shopId, barberId, percentageNumber) {
   const shops = getShops();
   const shop = shops.find(s => s.id === shopId);
@@ -437,7 +801,6 @@ function updateBarberCommission(shopId, barberId, percentageNumber) {
   return false;
 }
 
-// Actualizar color flúor de la barbería
 function updateShopFluorColor(shopId, colorHex) {
   const shops = getShops();
   const shop = shops.find(s => s.id === shopId);
@@ -465,10 +828,6 @@ function updateShopCustomization(shopId, data) {
     applyShopFluorTheme(shop);
   }
 }
-
-// ==========================================
-// GESTIÓN DE CORTES Y PRECIOS DEL DUEÑO
-// ==========================================
 
 function updateServicePrice(shopId, serviceId, newPrice) {
   const shops = getShops();
@@ -509,25 +868,6 @@ function deleteService(shopId, serviceId) {
   return false;
 }
 
-function getAppointments(shopId = null) {
-  initDB();
-  const apts = JSON.parse(localStorage.getItem(STORAGE_KEYS.APPOINTMENTS) || '[]');
-  if (shopId) {
-    return apts.filter(a => a.shopId === shopId);
-  }
-  return apts;
-}
-
-function saveAppointment(apt) {
-  const apts = getAppointments();
-  apt.id = 'apt-' + Date.now();
-  apt.code = 'CB-' + Math.floor(1000 + Math.random() * 9000);
-  apt.createdAt = new Date().toISOString();
-  apts.unshift(apt);
-  localStorage.setItem(STORAGE_KEYS.APPOINTMENTS, JSON.stringify(apts));
-  return apt;
-}
-
 function createWhatsAppBookingUrl(appointment, shop, targetPhone = null) {
   const raw = targetPhone || shop.phone || '59899123456';
   const clean = raw.replace(/[^0-9]/g, '');
@@ -538,16 +878,22 @@ function createWhatsAppBookingUrl(appointment, shop, targetPhone = null) {
     productLine = `🛍️ *Producto adicional:* ${appointment.productName} ($ ${appointment.productPrice} UYU)\n`;
   }
 
+  let promoLine = '';
+  if (appointment.promoName && appointment.discountApplied > 0) {
+    promoLine = `🎉 *Beneficio aplicado:* ${appointment.promoName} (-$ ${appointment.discountApplied} UYU)\n`;
+  }
+
   const text = `¡Hola *${shop.name}*! 💈\n` +
                `Quiero confirmar mi reserva de turno:\n\n` +
                `👤 *Cliente:* ${appointment.clientName}\n` +
                `📱 *Celular:* ${appointment.clientPhone}\n` +
                `✂️ *Servicio:* ${appointment.serviceName}\n` +
                productLine +
+               promoLine +
                `💈 *Barbero:* ${appointment.barberName}\n` +
                `📅 *Fecha:* ${appointment.date}\n` +
                `⏰ *Hora:* ${appointment.time} hs\n` +
-               `💰 *Total:* $ ${appointment.price} UYU\n\n` +
+               `💰 *Total a abonar:* $ ${appointment.price} UYU\n\n` +
                `¡Muchas gracias!`;
                
   return `https://wa.me/${phone}?text=${encodeURIComponent(text)}`;
