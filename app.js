@@ -215,8 +215,22 @@ const DEFAULT_APPOINTMENTS = [
 ];
 
 // =========================================================================
-// PERSISTENCIA E INICIALIZACIÓN CON SUPABASE
+// CONFIGURACIÓN DE PROMOCIONES POR DEFECTO
 // =========================================================================
+function getDefaultPromotionsConfig() {
+  return {
+    points: { enabled: true, cutsRequired: 5, discountPct: 50 },
+    birthday: { enabled: true, discountPct: 20 },
+    happyHour: {
+      enabled: true,
+      discountPct: 15,
+      days: [2, 3],
+      timeStart: '09:00',
+      timeEnd: '13:00'
+    },
+    upselling: { enabled: true }
+  };
+}
 
 // Mapeo entre modelo JavaScript local y columnas de Supabase
 function mapShopToSupabase(s) {

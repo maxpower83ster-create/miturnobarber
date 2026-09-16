@@ -274,6 +274,22 @@
     // Protección de sesión: Solo el dueño de la plataforma (superadmin) puede entrar
     requireAuth('superadmin');
 
+    // Función de configuración de promociones por defecto (asegurada en superadmin)
+    function getDefaultPromotionsConfig() {
+      return {
+        points: { enabled: true, cutsRequired: 5, discountPct: 50 },
+        birthday: { enabled: true, discountPct: 20 },
+        happyHour: {
+          enabled: true,
+          discountPct: 15,
+          days: [2, 3],
+          timeStart: '09:00',
+          timeEnd: '13:00'
+        },
+        upselling: { enabled: true }
+      };
+    }
+
     const PLAN_DEFAULTS = {
       standard: { name: 'Plan Básico', fee: 1200, hasStore: false },
       pro: { name: 'Plan Pro + Tienda', fee: 1900, hasStore: true },
