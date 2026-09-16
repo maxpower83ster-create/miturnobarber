@@ -361,8 +361,30 @@
       }
     }
 
-    function renderSuperAdmin() {
-      const shops = getShops();
+    async function renderSuperAdmin() {
+      let shops = [];
+
+      // 1. SELECT directo a Supabase
+      if (typeof supabaseFetch === 'function') {
+        try {
+          const res = await supabaseFetch('shops?select=*&order=created_at.desc');
+          if (res && res.data && Array.isArray(res.data)) {
+            // Filtrar cuenta superadmin si viene en shops
+            shops = res.data
+              .filter(r => r.role !== 'superadmin' && r.email !== 'admin@miturnobarber.com')
+              .map(mapShopFromSupabase);
+            localStorage.setItem(STORAGE_KEYS.SHOPS, JSON.stringify(shops));
+          }
+        } catch (fetchErr) {
+          console.warn('Consulta directa a Supabase falló, usando caché local:', fetchErr);
+        }
+      }
+
+      // 2. Si no se obtuvieron datos de la red, leer caché local
+      if (shops.length === 0) {
+        const local = JSON.parse(localStorage.getItem(STORAGE_KEYS.SHOPS) || '[]');
+        shops = local.filter(s => s.role !== 'superadmin' && s.email !== 'admin@miturnobarber.com');
+      }
       
       let totalMRR = 0;
       let activeCount = 0;
@@ -382,6 +404,17 @@
       document.getElementById('statActiveShops').innerText = activeCount;
 
       const shopsListEl = document.getElementById('saasShopsList');
+      if (shops.length === 0) {
+        shopsListEl.innerHTML = `
+          <div style="text-align: center; padding: 40px; color: var(--text-muted);">
+            <div style="font-size: 32px; margin-bottom: 8px;">💈</div>
+            <p>No hay barberías registradas aún en Supabase.</p>
+            <button class="btn btn-primary btn-sm" onclick="openNewShopModal()" style="margin-top: 10px;">➕ Dar de Alta la Primera</button>
+          </div>
+        `;
+        return;
+      }
+
       shopsListEl.innerHTML = shops.map(s => {
         const bookingUrl = getShopBookingUrl(s.id);
         const adminUrl = getShopAdminUrl(s.id);
@@ -497,13 +530,18 @@
       document.getElementById('qrModalOverlay').classList.remove('active');
     }
 
-    function toggleShopStatus(shopId) {
-      const shops = getShops();
-      const s = shops.find(item => item.id === shopId);
+    async function toggleShopStatus(shopId) {
+      const local = JSON.parse(localStorage.getItem(STORAGE_KEYS.SHOPS) || '[]');
+      const s = local.find(item => item.id === shopId);
       if (s) {
-        s.status = s.status === 'active' ? 'suspended' : 'active';
-        saveShops(shops);
-        renderSuperAdmin();
+        const newStatus = s.status === 'active' ? 'suspended' : 'active';
+        s.status = newStatus;
+        localStorage.setItem(STORAGE_KEYS.SHOPS, JSON.stringify(local));
+
+        if (typeof supabaseFetch === 'function') {
+          await supabaseFetch(`shops?id=eq.${shopId}`, 'PATCH', { status: newStatus });
+        }
+        await renderSuperAdmin();
       }
     }
 
@@ -521,7 +559,8 @@
     }
 
     function openEditPlanModal(shopId) {
-      const shop = getShops().find(s => s.id === shopId);
+      const local = JSON.parse(localStorage.getItem(STORAGE_KEYS.SHOPS) || '[]');
+      const shop = local.find(s => s.id === shopId);
       if (!shop) return;
 
       document.getElementById('editShopId').value = shop.id;
@@ -537,33 +576,57 @@
       document.getElementById('editPlanModal').classList.remove('active');
     }
 
-    function saveEditedPlan() {
+    async function saveEditedPlan() {
       const shopId = document.getElementById('editShopId').value;
       const plan = document.getElementById('editShopPlan').value;
       const fee = Number(document.getElementById('editShopFee').value);
       const hasStore = document.getElementById('editShopHasStore').checked;
 
-      updateShopSaaSPlan(shopId, plan, fee, hasStore);
+      const local = JSON.parse(localStorage.getItem(STORAGE_KEYS.SHOPS) || '[]');
+      const s = local.find(item => item.id === shopId);
+      if (s) {
+        s.plan = plan;
+        s.monthlyFee = fee;
+        s.hasStore = hasStore;
+        localStorage.setItem(STORAGE_KEYS.SHOPS, JSON.stringify(local));
+      }
+
+      if (typeof supabaseFetch === 'function') {
+        const res = await supabaseFetch(`shops?id=eq.${shopId}`, 'PATCH', {
+          plan: plan,
+          monthly_fee: fee
+        });
+        if (res && res.error) {
+          alert('Detalle al actualizar en Supabase: ' + res.error.message);
+        }
+      }
+
       closeEditPlanModal();
-      renderSuperAdmin();
+      await renderSuperAdmin();
       alert('¡Plan y módulos de la barbería actualizados con éxito!');
     }
 
-    function activateShopDirectly(shopId) {
-      const shops = getShops();
-      const s = shops.find(item => item.id === shopId);
+    async function activateShopDirectly(shopId) {
+      const local = JSON.parse(localStorage.getItem(STORAGE_KEYS.SHOPS) || '[]');
+      const s = local.find(item => item.id === shopId);
       if (s) {
         s.status = 'active';
         s.subscriptionStatus = 'active';
-        saveShops(shops);
-        renderSuperAdmin();
+        localStorage.setItem(STORAGE_KEYS.SHOPS, JSON.stringify(local));
+
+        if (typeof supabaseFetch === 'function') {
+          await supabaseFetch(`shops?id=eq.${shopId}`, 'PATCH', {
+            status: 'active'
+          });
+        }
+        await renderSuperAdmin();
         alert(`✅ Barbería "${s.name}" activada como cliente permanente.`);
       }
     }
 
-    function extendShopTrial(shopId, days = 7) {
-      const shops = getShops();
-      const s = shops.find(item => item.id === shopId);
+    async function extendShopTrial(shopId, days = 7) {
+      const local = JSON.parse(localStorage.getItem(STORAGE_KEYS.SHOPS) || '[]');
+      const s = local.find(item => item.id === shopId);
       if (s) {
         s.status = 'trial';
         s.subscriptionStatus = 'trial';
@@ -572,8 +635,15 @@
           : new Date();
         currentEnd.setDate(currentEnd.getDate() + days);
         s.trialEndsAt = currentEnd.toISOString();
-        saveShops(shops);
-        renderSuperAdmin();
+        localStorage.setItem(STORAGE_KEYS.SHOPS, JSON.stringify(local));
+
+        if (typeof supabaseFetch === 'function') {
+          await supabaseFetch(`shops?id=eq.${shopId}`, 'PATCH', {
+            status: 'trial',
+            trial_ends_at: s.trialEndsAt
+          });
+        }
+        await renderSuperAdmin();
         alert(`🎉 Período demo de "${s.name}" extendido por ${days} días más.`);
       }
     }
@@ -581,127 +651,128 @@
     async function handleCreateShop(e) {
       if (e) e.preventDefault();
 
-      try {
-        const nameInput = document.getElementById('newShopName');
-        const addressInput = document.getElementById('newShopAddress');
-        const phoneInput = document.getElementById('newShopPhone');
-        const emailInput = document.getElementById('newShopEmail');
-        const passwordInput = document.getElementById('newShopPassword');
-        const statusInput = document.getElementById('newShopStatus');
-        const trialDaysInput = document.getElementById('newShopTrialDays');
-        const planInput = document.getElementById('newShopPlan');
-        const feeInput = document.getElementById('newShopFee');
-        const storeInput = document.getElementById('newShopHasStore');
-        const emojiInput = document.getElementById('newShopEmoji');
+      const nameInput = document.getElementById('newShopName');
+      const addressInput = document.getElementById('newShopAddress');
+      const phoneInput = document.getElementById('newShopPhone');
+      const emailInput = document.getElementById('newShopEmail');
+      const passwordInput = document.getElementById('newShopPassword');
+      const statusInput = document.getElementById('newShopStatus');
+      const trialDaysInput = document.getElementById('newShopTrialDays');
+      const planInput = document.getElementById('newShopPlan');
+      const feeInput = document.getElementById('newShopFee');
+      const storeInput = document.getElementById('newShopHasStore');
+      const emojiInput = document.getElementById('newShopEmoji');
 
-        const name = (nameInput ? nameInput.value : '').trim();
-        const address = (addressInput ? addressInput.value : '').trim() || 'Salto, Uruguay';
-        const phone = (phoneInput ? phoneInput.value : '').trim() || '59899123456';
-        const email = (emailInput ? emailInput.value : '').trim() || ('contacto@' + Date.now() + '.com');
-        const password = (passwordInput ? passwordInput.value : '').trim() || 'barber123';
-        const status = statusInput ? statusInput.value : 'trial';
-        const trialDays = trialDaysInput ? Number(trialDaysInput.value) : 7;
-        const plan = planInput ? planInput.value : 'pro';
-        const fee = feeInput ? Number(feeInput.value) : 1900;
-        const hasStore = storeInput ? storeInput.checked : true;
-        const emoji = (emojiInput ? emojiInput.value : '').trim() || '💈';
+      const name = (nameInput ? nameInput.value : '').trim();
+      const address = (addressInput ? addressInput.value : '').trim() || 'Salto, Uruguay';
+      const phone = (phoneInput ? phoneInput.value : '').trim() || '59899123456';
+      const email = (emailInput ? emailInput.value : '').trim();
+      const password = (passwordInput ? passwordInput.value : '').trim() || 'barber123';
+      const status = statusInput ? statusInput.value : 'trial';
+      const trialDays = trialDaysInput ? Number(trialDaysInput.value) : 7;
+      const plan = planInput ? planInput.value : 'pro';
+      const fee = feeInput ? Number(feeInput.value) : 1900;
+      const hasStore = storeInput ? storeInput.checked : true;
+      const emoji = (emojiInput ? emojiInput.value : '').trim() || '💈';
 
-        if (!name) {
-          alert('Por favor escribe el nombre de la barbería.');
-          return;
-        }
-
-        // Generar slug limpio para la URL
-        const cleanSlug = name.toLowerCase()
-          .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
-          .replace(/[^a-z0-9]+/g, '-')
-          .replace(/^-+|-+$/g, '') || ('shop-' + Date.now());
-
-        const trialEnds = new Date();
-        trialEnds.setDate(trialEnds.getDate() + trialDays);
-
-        const newShop = {
-          id: cleanSlug,
-          name: name,
-          subtitle: 'BARBERÍA & ESTILO',
-          heroTitle: 'Tu estilo habla por ti.',
-          heroHighlight: 'Defínelo con expertos.',
-          tagline: 'Las mejores reservas y cortes profesionales en Salto.',
-          address: address,
-          phone: phone,
-          email: email,
-          password: password,
-          status: status,
-          subscriptionStatus: status,
-          trialDays: trialDays,
-          trialEndsAt: trialEnds.toISOString(),
-          plan: plan,
-          hasStore: hasStore,
-          monthlyFee: fee,
-          logoEmoji: emoji,
-          brandColor: '#00ff88',
-          promotions: getDefaultPromotionsConfig(),
-          workingHours: {
-            start: '09:00',
-            end: '20:00',
-            intervalMinutes: 45,
-            daysOpen: ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado']
-          },
-          barbers: [
-            { id: 'b-' + Date.now(), name: 'Barbero Titular', photo: 'https://images.unsplash.com/photo-1583863788434-e58a36330cf0?w=200&q=80', role: 'Barbero Titular • Fade', commissionRate: 0.50, daysOff: [0], phone: phone }
-          ],
-          services: [
-            { id: 's-1', name: 'Corte Clásico & Fade', price: 450, duration: '30 min', desc: 'Corte profesional con degradé y acabado impecable', photo: 'https://images.unsplash.com/photo-1622286342621-4bd786c2447c?w=160&q=80', isPromo: false },
-            { id: 's-2', name: 'Ritual Barba Tradicional', price: 350, duration: '30 min', desc: 'Perfilado a navaja, toalla caliente e hidratación', photo: 'https://images.unsplash.com/photo-1621605815971-fbc98d665033?w=160&q=80', isPromo: false },
-            { id: 's-3', name: 'Combo Completo (Pelo + Barba)', price: 700, duration: '60 min', desc: 'Experiencia completa corte y barba esculpida', photo: 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=160&q=80', isPromo: true }
-          ],
-          products: [
-            { id: 'p-1', name: 'Pomada Matte Gold (Fijación Fuerte)', price: 350, desc: 'Fijación fuerte y acabado natural mate', photo: 'https://images.unsplash.com/photo-1597854710119-a6a4220b33b9?w=160&q=80', active: true },
-            { id: 'p-2', name: 'Aceite Esencial para Barba', price: 320, desc: 'Hidratación con aroma a cedro noble', photo: 'https://images.unsplash.com/photo-1626806787461-102c1bfaaea1?w=160&q=80', active: true }
-          ]
-        };
-
-        const shops = getShops();
-        const existingIdx = shops.findIndex(s => s.id === cleanSlug);
-        if (existingIdx >= 0) {
-          shops[existingIdx] = newShop;
-        } else {
-          shops.push(newShop);
-        }
-
-        saveShops(shops);
-
-        // Inserción directa en la tabla shops de Supabase
-        if (typeof supabaseFetch === 'function' && typeof mapShopToSupabase === 'function') {
-          try {
-            await supabaseFetch('shops', 'POST', mapShopToSupabase(newShop), { 'Prefer': 'resolution=merge-duplicates' });
-          } catch (cloudErr) {
-            console.warn('Aviso sincronización Supabase nueva barbería:', cloudErr);
-          }
-        }
-
-        closeNewShopModal();
-        renderSuperAdmin();
-
-        // Limpiar campos del formulario
-        if (nameInput) nameInput.value = '';
-        if (addressInput) addressInput.value = '';
-        if (phoneInput) phoneInput.value = '';
-        if (emailInput) emailInput.value = '';
-
-        alert(`✅ ¡Barbería "${name}" creada y sincronizada en Supabase con éxito!\n\n🔑 Acceso Barbero: ${email} (clave: ${password})\n📱 Link App Clientes: ${getShopBookingUrl(cleanSlug)}`);
-      } catch (err) {
-        console.error('Error guardando barbería:', err);
-        alert('Hubo un detalle al guardar: ' + err.message);
+      if (!name) {
+        alert('Por favor escribe el nombre de la barbería.');
+        return;
       }
+      if (!email) {
+        alert('Por favor escribe el correo electrónico de acceso para la barbería.');
+        return;
+      }
+
+      // Generar slug limpio para la URL
+      const cleanSlug = name.toLowerCase()
+        .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '') || ('shop-' + Date.now());
+
+      const trialEnds = new Date();
+      trialEnds.setDate(trialEnds.getDate() + trialDays);
+
+      const newShop = {
+        id: cleanSlug,
+        name: name,
+        subtitle: 'BARBERÍA & ESTILO',
+        heroTitle: 'Tu estilo habla por ti.',
+        heroHighlight: 'Defínelo con expertos.',
+        tagline: 'Las mejores reservas y cortes profesionales en Salto.',
+        address: address,
+        phone: phone,
+        email: email,
+        password: password,
+        status: status,
+        subscriptionStatus: status,
+        trialDays: trialDays,
+        trialEndsAt: trialEnds.toISOString(),
+        plan: plan,
+        hasStore: hasStore,
+        monthlyFee: fee,
+        logoEmoji: emoji,
+        brandColor: '#00ff88',
+        promotions: getDefaultPromotionsConfig(),
+        workingHours: {
+          start: '09:00',
+          end: '20:00',
+          intervalMinutes: 45,
+          daysOpen: ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado']
+        },
+        barbers: [
+          { id: 'b-' + Date.now(), name: 'Barbero Titular', photo: 'https://images.unsplash.com/photo-1583863788434-e58a36330cf0?w=200&q=80', role: 'Barbero Titular • Fade', commissionRate: 0.50, daysOff: [0], phone: phone }
+        ],
+        services: [
+          { id: 's-1', name: 'Corte Clásico & Fade', price: 450, duration: '30 min', desc: 'Corte profesional con degradé y acabado impecable', photo: 'https://images.unsplash.com/photo-1622286342621-4bd786c2447c?w=160&q=80', isPromo: false },
+          { id: 's-2', name: 'Ritual Barba Tradicional', price: 350, duration: '30 min', desc: 'Perfilado a navaja, toalla caliente e hidratación', photo: 'https://images.unsplash.com/photo-1621605815971-fbc98d665033?w=160&q=80', isPromo: false },
+          { id: 's-3', name: 'Combo Completo (Pelo + Barba)', price: 700, duration: '60 min', desc: 'Experiencia completa corte y barba esculpida', photo: 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=160&q=80', isPromo: true }
+        ],
+        products: [
+          { id: 'p-1', name: 'Pomada Matte Gold (Fijación Fuerte)', price: 350, desc: 'Fijación fuerte y acabado natural mate', photo: 'https://images.unsplash.com/photo-1597854710119-a6a4220b33b9?w=160&q=80', active: true },
+          { id: 'p-2', name: 'Aceite Esencial para Barba', price: 320, desc: 'Hidratación con aroma a cedro noble', photo: 'https://images.unsplash.com/photo-1626806787461-102c1bfaaea1?w=160&q=80', active: true }
+        ]
+      };
+
+      const supabasePayload = mapShopToSupabase(newShop);
+
+      // INSERT directo en la tabla shops de Supabase
+      const res = await supabaseFetch('shops', 'POST', supabasePayload, {
+        'Prefer': 'return=representation'
+      });
+
+      if (res && res.error) {
+        console.error('Error insertando barbería en Supabase:', res.error);
+        alert('Error al registrar en Supabase:\n' + (res.error.message || JSON.stringify(res.error)));
+        return;
+      }
+
+      // Guardar también en localStorage como réplica rápida
+      const local = JSON.parse(localStorage.getItem(STORAGE_KEYS.SHOPS) || '[]');
+      const existingIdx = local.findIndex(s => s.id === cleanSlug);
+      if (existingIdx >= 0) {
+        local[existingIdx] = newShop;
+      } else {
+        local.unshift(newShop);
+      }
+      localStorage.setItem(STORAGE_KEYS.SHOPS, JSON.stringify(local));
+
+      closeNewShopModal();
+
+      // Refrescar tabla con datos directamente de Supabase
+      await renderSuperAdmin();
+
+      // Limpiar campos del formulario
+      if (nameInput) nameInput.value = '';
+      if (addressInput) addressInput.value = '';
+      if (phoneInput) phoneInput.value = '';
+      if (emailInput) emailInput.value = '';
+
+      alert(`✅ ¡Barbería "${name}" creada y dada de alta con éxito en Supabase!\n\n🔑 Acceso Barbero: ${email} (clave: ${password})\n📱 Link App Clientes: ${getShopBookingUrl(cleanSlug)}`);
     }
 
     window.onload = async function() {
-      renderSuperAdmin();
-      if (typeof syncFromSupabase === 'function') {
-        await syncFromSupabase();
-        renderSuperAdmin();
-      }
+      await renderSuperAdmin();
     };
   </script>
 </body>

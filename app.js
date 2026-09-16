@@ -18,7 +18,7 @@ const SUPABASE_CONFIG = {
   anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRneGRsbHFuc3Nwb2hmdWJxcHMiLCJyb2xlIjoiYW5vbiIsImlhdCI6MTc2MDk5MTYwMSwiZXhwIjoyMDc2NTY3NjAxfQ.sB-B-aLTY8uRt5PT6fHEJeI71VbCyy3oB_cYh15m4'
 };
 
-// Cliente REST ligero y resiliente para Supabase
+// Cliente REST directo y resiliente para Supabase
 async function supabaseFetch(endpoint, method = 'GET', body = null, extraHeaders = {}) {
   try {
     const url = `${SUPABASE_CONFIG.url}/rest/v1/${endpoint}`;
@@ -34,18 +34,24 @@ async function supabaseFetch(endpoint, method = 'GET', body = null, extraHeaders
     }
     const res = await fetch(url, options);
     if (!res.ok) {
-      const errText = await res.text();
-      console.warn(`Supabase ${method} ${endpoint} aviso:`, errText);
-      return null;
+      let errDetail = '';
+      try {
+        errDetail = await res.text();
+      } catch (e) {
+        errDetail = res.statusText;
+      }
+      console.warn(`Supabase ${method} ${endpoint} aviso (${res.status}):`, errDetail);
+      return { error: { status: res.status, message: errDetail || res.statusText }, data: null };
     }
     const contentType = res.headers.get('content-type');
     if (contentType && contentType.includes('application/json')) {
-      return await res.json();
+      const data = await res.json();
+      return { data, error: null };
     }
-    return true;
+    return { data: true, error: null };
   } catch (err) {
     console.warn(`Supabase offline o error de red (${endpoint}):`, err);
-    return null;
+    return { error: { message: err.message || 'Error de red o conexión a Supabase' }, data: null };
   }
 }
 
@@ -333,44 +339,31 @@ function mapAppointmentFromSupabase(row) {
 async function syncFromSupabase() {
   try {
     // 1. Cargar Barberías desde Supabase
-    const dbShops = await supabaseFetch('shops?select=*');
-    if (Array.isArray(dbShops) && dbShops.length > 0) {
-      const parsedShops = dbShops.map(mapShopFromSupabase);
+    const res = await supabaseFetch('shops?select=*&order=created_at.desc');
+    if (res && res.data && Array.isArray(res.data) && res.data.length > 0) {
+      const parsedShops = res.data.map(mapShopFromSupabase);
       localStorage.setItem(STORAGE_KEYS.SHOPS, JSON.stringify(parsedShops));
-    } else {
-      // Si la base de datos está vacía, sincronizar la barbería inicial hacia Supabase
-      const localShops = JSON.parse(localStorage.getItem(STORAGE_KEYS.SHOPS) || '[]');
-      const toSync = localShops.length > 0 ? localShops : DEFAULT_SHOPS;
-      for (const s of toSync) {
-        await supabaseFetch('shops', 'POST', mapShopToSupabase(s), { 'Prefer': 'resolution=merge-duplicates' });
-      }
-    }
-
-    // 2. Cargar Turnos desde Supabase
-    const dbAppointments = await supabaseFetch('appointments?select=*&order=created_at.desc');
-    if (Array.isArray(dbAppointments)) {
-      const parsedApts = dbAppointments.map(mapAppointmentFromSupabase);
-      localStorage.setItem(STORAGE_KEYS.APPOINTMENTS, JSON.stringify(parsedApts));
+      return parsedShops;
     }
   } catch (err) {
     console.warn('Sincronización en segundo plano de Supabase:', err);
   }
+  return null;
 }
 
 function initDB() {
-  // 1. Carga inicial local
+  // Solo inicializar si no existe ninguna estructura previa en localStorage
   if (!localStorage.getItem(STORAGE_KEYS.SHOPS)) {
-    localStorage.setItem(STORAGE_KEYS.SHOPS, JSON.stringify(DEFAULT_SHOPS));
+    localStorage.setItem(STORAGE_KEYS.SHOPS, JSON.stringify([]));
   }
   if (!localStorage.getItem(STORAGE_KEYS.APPOINTMENTS)) {
-    localStorage.setItem(STORAGE_KEYS.APPOINTMENTS, JSON.stringify(DEFAULT_APPOINTMENTS));
+    localStorage.setItem(STORAGE_KEYS.APPOINTMENTS, JSON.stringify([]));
   }
   if (!localStorage.getItem(STORAGE_KEYS.ACTIVE_SHOP_ID)) {
     localStorage.setItem(STORAGE_KEYS.ACTIVE_SHOP_ID, 'casa-brava');
   }
 
-  // 2. Disparar sincronización con Supabase de inmediato
-  syncFromSupabase();
+  // Comprobar parámetro ?setup= o ?import= si viene por URL
 
   // 3. Comprobar parámetro ?setup= o ?import= si viene por URL
   try {
@@ -507,7 +500,8 @@ async function authenticateUser(email, password) {
   // 1. Verificación directa en Supabase: SELECT * FROM shops WHERE email = [email] AND password_hash = [password]
   try {
     const encodedEmail = encodeURIComponent(cleanEmail);
-    const remoteShops = await supabaseFetch(`shops?email=eq.${encodedEmail}&select=*`);
+    const res = await supabaseFetch(`shops?email=eq.${encodedEmail}&select=*`);
+    const remoteShops = res && res.data ? res.data : (Array.isArray(res) ? res : null);
 
     if (Array.isArray(remoteShops) && remoteShops.length > 0) {
       const dbRow = remoteShops[0];
