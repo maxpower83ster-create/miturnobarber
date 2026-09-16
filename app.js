@@ -10,6 +10,45 @@ const STORAGE_KEYS = {
   CLOUD_CONFIG: 'miturnobarber_cloud_config_v9'
 };
 
+// =========================================================================
+// CONFIGURACIÓN SUPABASE EN TIEMPO REAL (CLOUD DATABASE)
+// =========================================================================
+const SUPABASE_CONFIG = {
+  url: 'https://tgxdllqnsspohfubqps.supabase.co',
+  anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRneGRsbHFuc3Nwb2hmdWJxcHMiLCJyb2xlIjoiYW5vbiIsImlhdCI6MTc2MDk5MTYwMSwiZXhwIjoyMDc2NTY3NjAxfQ.sB-B-aLTY8uRt5PT6fHEJeI71VbCyy3oB_cYh15m4'
+};
+
+// Cliente REST ligero y resiliente para Supabase
+async function supabaseFetch(endpoint, method = 'GET', body = null, extraHeaders = {}) {
+  try {
+    const url = `${SUPABASE_CONFIG.url}/rest/v1/${endpoint}`;
+    const headers = {
+      'apikey': SUPABASE_CONFIG.anonKey,
+      'Authorization': `Bearer ${SUPABASE_CONFIG.anonKey}`,
+      'Content-Type': 'application/json',
+      ...extraHeaders
+    };
+    const options = { method, headers };
+    if (body && (method === 'POST' || method === 'PATCH' || method === 'PUT')) {
+      options.body = JSON.stringify(body);
+    }
+    const res = await fetch(url, options);
+    if (!res.ok) {
+      const errText = await res.text();
+      console.warn(`Supabase ${method} ${endpoint} aviso:`, errText);
+      return null;
+    }
+    const contentType = res.headers.get('content-type');
+    if (contentType && contentType.includes('application/json')) {
+      return await res.json();
+    }
+    return true;
+  } catch (err) {
+    console.warn(`Supabase offline o error de red (${endpoint}):`, err);
+    return null;
+  }
+}
+
 // Paleta de Colores Flúor Neón Disponibles
 const FLUOR_THEMES = [
   { id: 'green', name: 'Verde Cyberpunk', color: '#00ff88', glow: 'rgba(0, 255, 136, 0.45)', light: 'rgba(0, 255, 136, 0.15)', border: 'rgba(0, 255, 136, 0.4)' },
@@ -176,11 +215,136 @@ const DEFAULT_APPOINTMENTS = [
 ];
 
 // =========================================================================
-// PERSISTENCIA E INICIALIZACIÓN
+// PERSISTENCIA E INICIALIZACIÓN CON SUPABASE
 // =========================================================================
 
+// Mapeo entre modelo JavaScript local y columnas de Supabase
+function mapShopToSupabase(s) {
+  return {
+    id: s.id,
+    slug: s.slug || s.id,
+    name: s.name,
+    email: s.email || `contacto@${s.id}.com`,
+    password_hash: s.password || 'barber123',
+    role: s.role || 'barber',
+    status: s.status || 'active',
+    trial_days: s.trialDays || 14,
+    trial_ends_at: s.trialEndsAt || new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
+    monthly_fee: s.monthlyFee || 1900,
+    plan: s.plan || 'pro',
+    phone: s.phone || '59899123456',
+    address: s.address || 'Salto, Uruguay',
+    brand_color: s.brandColor || '#00ff88',
+    promotions: s.promotions || getDefaultPromotionsConfig(),
+    working_hours: s.workingHours || null,
+    barbers: s.barbers || [],
+    services: s.services || [],
+    products: s.products || []
+  };
+}
+
+function mapShopFromSupabase(row) {
+  return {
+    id: row.id,
+    slug: row.slug || row.id,
+    name: row.name,
+    email: row.email,
+    password: row.password_hash,
+    role: row.role || 'barber',
+    status: row.status || 'active',
+    trialDays: row.trial_days || 14,
+    trialEndsAt: row.trial_ends_at,
+    monthlyFee: Number(row.monthly_fee) || 1900,
+    plan: row.plan || 'pro',
+    phone: row.phone,
+    address: row.address,
+    brandColor: row.brand_color || '#00ff88',
+    promotions: row.promotions || getDefaultPromotionsConfig(),
+    workingHours: row.working_hours,
+    barbers: row.barbers || [],
+    services: row.services || [],
+    products: row.products || [],
+    hasStore: (row.plan !== 'standard')
+  };
+}
+
+function mapAppointmentToSupabase(apt) {
+  return {
+    id: apt.id,
+    shop_id: apt.shopId,
+    code: apt.code || ('CB-' + Math.floor(1000 + Math.random() * 9000)),
+    client_name: apt.clientName,
+    client_phone: apt.clientPhone,
+    barber_id: apt.barberId || 'b1',
+    barber_name: apt.barberName || 'Barbero',
+    service_id: apt.serviceId || 's1',
+    service_name: apt.serviceName || 'Corte',
+    price: Number(apt.price) || 450,
+    discount_applied: Number(apt.discountAmount || apt.discountApplied || 0),
+    promo_type: apt.promotionName || apt.promoType || null,
+    product_name: apt.productName || null,
+    product_price: Number(apt.productPrice || 0),
+    date: apt.date,
+    time: apt.time,
+    status: apt.status || 'confirmed',
+    notes: apt.notes || ''
+  };
+}
+
+function mapAppointmentFromSupabase(row) {
+  return {
+    id: row.id,
+    shopId: row.shop_id,
+    code: row.code,
+    clientName: row.client_name,
+    clientPhone: row.client_phone,
+    barberId: row.barber_id,
+    barberName: row.barber_name,
+    serviceId: row.service_id,
+    serviceName: row.service_name,
+    price: Number(row.price),
+    discountApplied: Number(row.discount_applied) > 0,
+    discountAmount: Number(row.discount_applied),
+    promotionName: row.promo_type,
+    productName: row.product_name,
+    productPrice: Number(row.product_price),
+    date: row.date,
+    time: row.time,
+    status: row.status || 'confirmed',
+    createdAt: row.created_at
+  };
+}
+
+// Sincronización en tiempo real desde Supabase hacia la memoria local
+async function syncFromSupabase() {
+  try {
+    // 1. Cargar Barberías desde Supabase
+    const dbShops = await supabaseFetch('shops?select=*');
+    if (Array.isArray(dbShops) && dbShops.length > 0) {
+      const parsedShops = dbShops.map(mapShopFromSupabase);
+      localStorage.setItem(STORAGE_KEYS.SHOPS, JSON.stringify(parsedShops));
+    } else {
+      // Si la base de datos está vacía, sincronizar la barbería inicial hacia Supabase
+      const localShops = JSON.parse(localStorage.getItem(STORAGE_KEYS.SHOPS) || '[]');
+      const toSync = localShops.length > 0 ? localShops : DEFAULT_SHOPS;
+      for (const s of toSync) {
+        await supabaseFetch('shops', 'POST', mapShopToSupabase(s), { 'Prefer': 'resolution=merge-duplicates' });
+      }
+    }
+
+    // 2. Cargar Turnos desde Supabase
+    const dbAppointments = await supabaseFetch('appointments?select=*&order=created_at.desc');
+    if (Array.isArray(dbAppointments)) {
+      const parsedApts = dbAppointments.map(mapAppointmentFromSupabase);
+      localStorage.setItem(STORAGE_KEYS.APPOINTMENTS, JSON.stringify(parsedApts));
+    }
+  } catch (err) {
+    console.warn('Sincronización en segundo plano de Supabase:', err);
+  }
+}
+
 function initDB() {
-  // 1. Migración o carga inicial
+  // 1. Carga inicial local
   if (!localStorage.getItem(STORAGE_KEYS.SHOPS)) {
     localStorage.setItem(STORAGE_KEYS.SHOPS, JSON.stringify(DEFAULT_SHOPS));
   }
@@ -191,7 +355,10 @@ function initDB() {
     localStorage.setItem(STORAGE_KEYS.ACTIVE_SHOP_ID, 'casa-brava');
   }
 
-  // 2. Comprobar parámetro ?setup= o ?import= si viene por URL
+  // 2. Disparar sincronización con Supabase de inmediato
+  syncFromSupabase();
+
+  // 3. Comprobar parámetro ?setup= o ?import= si viene por URL
   try {
     const urlParams = new URLSearchParams(window.location.search);
     const setupParam = urlParams.get('setup');
@@ -271,6 +438,14 @@ function getShops() {
 
 function saveShops(shops) {
   localStorage.setItem(STORAGE_KEYS.SHOPS, JSON.stringify(shops));
+  // Sincronización transparente con Supabase
+  try {
+    for (const s of shops) {
+      supabaseFetch('shops', 'POST', mapShopToSupabase(s), { 'Prefer': 'resolution=merge-duplicates' });
+    }
+  } catch (e) {
+    console.warn('Error sincronizando barberías a Supabase:', e);
+  }
 }
 
 function getActiveShop() {
@@ -446,6 +621,14 @@ function saveAppointment(apt) {
   
   apts.unshift(apt);
   localStorage.setItem(STORAGE_KEYS.APPOINTMENTS, JSON.stringify(apts));
+
+  // Sincronización instantánea hacia Supabase
+  try {
+    supabaseFetch('appointments', 'POST', mapAppointmentToSupabase(apt), { 'Prefer': 'resolution=merge-duplicates' });
+  } catch (err) {
+    console.warn('Error enviando turno a Supabase:', err);
+  }
+
   return apt;
 }
 
@@ -455,6 +638,14 @@ function updateAppointmentStatus(appointmentId, newStatus) {
   if (apt) {
     apt.status = newStatus; // 'confirmed', 'completed', 'cancelled'
     localStorage.setItem(STORAGE_KEYS.APPOINTMENTS, JSON.stringify(apts));
+
+    // Sincronización de cambio de estado en Supabase
+    try {
+      supabaseFetch(`appointments?id=eq.${encodeURIComponent(appointmentId)}`, 'PATCH', { status: newStatus });
+    } catch (err) {
+      console.warn('Error actualizando estado en Supabase:', err);
+    }
+
     return true;
   }
   return false;
@@ -466,6 +657,14 @@ function deleteAppointment(appointmentId) {
   apts = apts.filter(a => a.id !== appointmentId);
   if (apts.length !== initialLen) {
     localStorage.setItem(STORAGE_KEYS.APPOINTMENTS, JSON.stringify(apts));
+
+    // Eliminación en Supabase
+    try {
+      supabaseFetch(`appointments?id=eq.${encodeURIComponent(appointmentId)}`, 'DELETE');
+    } catch (err) {
+      console.warn('Error eliminando turno en Supabase:', err);
+    }
+
     return true;
   }
   return false;

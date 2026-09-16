@@ -1468,7 +1468,23 @@
       alert('¡Configuración de Promociones & Marketing guardada con éxito!\nAhora se aplicará dinámicamente a todos los clientes que reserven.');
     }
 
-    window.onload = renderAdminDashboard;
+    window.onload = async function() {
+      renderAdminDashboard();
+      // Sincronizar desde la nube Supabase al abrir
+      if (typeof syncFromSupabase === 'function') {
+        await syncFromSupabase();
+        renderAdminDashboard();
+        // Polling en segundo plano cada 10 segundos para nuevos turnos
+        setInterval(async () => {
+          await syncFromSupabase();
+          if (shop) {
+            const appointments = getAppointments(shop.id);
+            renderAppointmentsList(appointments);
+            renderAccountingAndCommissions(appointments);
+          }
+        }, 10000);
+      }
+    };
   </script>
 </body>
 </html>

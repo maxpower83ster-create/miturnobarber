@@ -477,6 +477,7 @@
       document.getElementById('modalSummary').innerHTML = `
         <strong>${clientName}</strong>, tu turno para <strong>${selectedService.name}</strong> con <strong>${selectedBarber.name}</strong> quedó agendado para el <strong>${date} a las ${selectedTime} hs</strong>.${promoInfo}${prodInfo}
         <div style="font-size: 16px; font-weight: 800; color: var(--primary); margin-top: 10px;">Total a pagar: ${formatMoneyUY(totalPrice)}</div>
+      `;
       document.getElementById('successModal').classList.add('active');
     }
 
@@ -487,7 +488,13 @@
       initClientPage();
     }
 
-    window.onload = initClientPage;
+    window.onload = async function() {
+      initClientPage();
+      if (typeof syncFromSupabase === 'function') {
+        await syncFromSupabase();
+        initClientPage();
+      }
+    };
   </script>
 </body>
 </html>

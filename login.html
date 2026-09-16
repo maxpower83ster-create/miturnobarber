@@ -194,7 +194,11 @@
       }, 350);
     }
 
-    window.onload = function() {
+    window.onload = async function() {
+      if (typeof syncFromSupabase === 'function') {
+        await syncFromSupabase();
+      }
+
       // Si ya hay sesión activa, redirigir directo
       const session = getCurrentSession();
       if (session) {
