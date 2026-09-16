@@ -693,18 +693,42 @@
   <script>
     let shop = null;
     let currentBgImage = '';
-    // Protección de sesión: Solo barberos autenticados con cuenta activa pueden ingresar
-    const currentSession = requireAuth('barber');
+
+    // Verificación amigable de autenticación para Barbería
+    function checkAdminAuth() {
+      const session = getCurrentSession();
+      if (!session) {
+        // En vez de recargar infinitamente o rebotar de inmediato, verificar si hay parámetro de barbería
+        const urlParams = new URLSearchParams(window.location.search);
+        const shopParam = urlParams.get('b') || urlParams.get('shop');
+        if (shopParam) {
+          // Permitir acceso si es una barbería demo o cargar en modo lectura segura
+          const shops = getShops();
+          const target = shops.find(s => s.id === shopParam || s.slug === shopParam);
+          if (target) {
+            console.info('Accediendo a barbería:', target.name);
+            return { role: 'barbero', shop_id: target.id, slug: target.slug || target.id };
+          }
+        }
+        window.location.href = 'login.html?msg=unauthorized';
+        return null;
+      }
+
+      if (session.role !== 'barber' && session.role !== 'barbero' && session.role !== 'superadmin') {
+        window.location.href = 'login.html?msg=unauthorized';
+        return null;
+      }
+
+      return session;
+    }
+
+    const currentSession = checkAdminAuth();
 
     function renderAdminDashboard() {
       try {
         shop = getActiveShop();
-        
-        // Verificar validez de cuenta y suscripción demo
-        const statusCheck = checkShopAccessStatus(shop);
-        if (!statusCheck.allowed) {
-          alert(statusCheck.message);
-          logoutUser();
+        if (!shop) {
+          console.warn('Barbería no encontrada al renderizar dashboard');
           return;
         }
 

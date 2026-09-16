@@ -169,6 +169,10 @@
 
         // Si es SuperAdmin
         if (result.role === 'superadmin') {
+          const userObj = { email: email, role: 'superadmin', name: result.session?.name || 'Super Admin' };
+          localStorage.setItem('currentUser', JSON.stringify(userObj));
+          localStorage.setItem('shopRole', 'superadmin');
+
           submitBtn.innerText = '¡Acceso Concedido! Redirigiendo...';
           window.location.href = 'superadmin.html';
           return;
@@ -177,8 +181,17 @@
         // Si es Barbería (barbero o barber)
         if (result.role === 'barbero' || result.role === 'barber') {
           const shop = result.shop;
-          const statusCheck = checkShopAccessStatus(shop);
+          const targetSlug = result.slug || (shop && (shop.slug || shop.id)) || 'casa-brava';
 
+          // Guardar información de sesión completa requerida
+          const userObj = { email: email, role: 'barbero', shopId: shop ? shop.id : targetSlug, slug: targetSlug };
+          localStorage.setItem('currentUser', JSON.stringify(userObj));
+          if (shop) {
+            localStorage.setItem('currentShop', JSON.stringify(shop));
+          }
+          localStorage.setItem('shopRole', 'barbero');
+
+          const statusCheck = checkShopAccessStatus(shop);
           if (!statusCheck.allowed) {
             alertBox.className = 'auth-alert warning';
             alertBox.innerHTML = `⚠️ <strong>Acceso Restringido:</strong> ${statusCheck.message}<br><br>📱 Contacta a soporte para reactivar tu cuenta: <strong>WhatsApp: 598 99 123 456</strong>`;
@@ -190,7 +203,6 @@
           }
 
           submitBtn.innerText = '¡Acceso Concedido! Entrando a tu panel...';
-          const targetSlug = result.slug || (shop && (shop.slug || shop.id)) || 'casa-brava';
           window.location.href = `admin.html?b=${encodeURIComponent(targetSlug)}`;
           return;
         }

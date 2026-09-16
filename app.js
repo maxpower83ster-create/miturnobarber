@@ -552,6 +552,9 @@ async function authenticateUser(email, password) {
       };
       localStorage.setItem(STORAGE_KEYS.AUTH_SESSION, JSON.stringify(session));
       localStorage.setItem(STORAGE_KEYS.ACTIVE_SHOP_ID, parsedShop.id);
+      localStorage.setItem('currentUser', JSON.stringify({ email: cleanEmail, role: 'barbero', shopId: parsedShop.id, slug: session.slug }));
+      localStorage.setItem('currentShop', JSON.stringify(parsedShop));
+      localStorage.setItem('shopRole', 'barbero');
 
       return { success: true, role: 'barbero', shop: parsedShop, slug: session.slug, session };
     }
@@ -569,6 +572,8 @@ async function authenticateUser(email, password) {
       loginAt: new Date().toISOString()
     };
     localStorage.setItem(STORAGE_KEYS.AUTH_SESSION, JSON.stringify(session));
+    localStorage.setItem('currentUser', JSON.stringify({ email: cleanEmail, role: 'superadmin', name: SUPERADMIN_ACCOUNT.name }));
+    localStorage.setItem('shopRole', 'superadmin');
     return { success: true, role: 'superadmin', session };
   }
 
@@ -586,6 +591,8 @@ async function authenticateUser(email, password) {
         loginAt: new Date().toISOString()
       };
       localStorage.setItem(STORAGE_KEYS.AUTH_SESSION, JSON.stringify(session));
+      localStorage.setItem('currentUser', JSON.stringify({ email: cleanEmail, role: 'superadmin', name: shop.name }));
+      localStorage.setItem('shopRole', 'superadmin');
       return { success: true, role: 'superadmin', session };
     }
 
@@ -600,6 +607,9 @@ async function authenticateUser(email, password) {
     };
     localStorage.setItem(STORAGE_KEYS.AUTH_SESSION, JSON.stringify(session));
     localStorage.setItem(STORAGE_KEYS.ACTIVE_SHOP_ID, shop.id);
+    localStorage.setItem('currentUser', JSON.stringify({ email: cleanEmail, role: 'barbero', shopId: shop.id, slug: session.slug }));
+    localStorage.setItem('currentShop', JSON.stringify(shop));
+    localStorage.setItem('shopRole', 'barbero');
     return { success: true, role: 'barbero', shop, slug: session.slug, session };
   }
 
@@ -609,7 +619,21 @@ async function authenticateUser(email, password) {
 function getCurrentSession() {
   try {
     const raw = localStorage.getItem(STORAGE_KEYS.AUTH_SESSION);
-    return raw ? JSON.parse(raw) : null;
+    if (raw) return JSON.parse(raw);
+
+    // Fallback con claves alternativas requeridas
+    const userRaw = localStorage.getItem('currentUser');
+    const role = localStorage.getItem('shopRole');
+    if (userRaw) {
+      const u = JSON.parse(userRaw);
+      return {
+        role: role || u.role || 'barbero',
+        shop_id: u.shopId || u.shop_id,
+        slug: u.slug || u.shopId,
+        email: u.email
+      };
+    }
+    return null;
   } catch (e) {
     return null;
   }
@@ -617,6 +641,9 @@ function getCurrentSession() {
 
 function logoutSession() {
   localStorage.removeItem(STORAGE_KEYS.AUTH_SESSION);
+  localStorage.removeItem('currentUser');
+  localStorage.removeItem('currentShop');
+  localStorage.removeItem('shopRole');
 }
 
 function logoutUser() {
