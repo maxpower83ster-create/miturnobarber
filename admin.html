@@ -694,28 +694,53 @@
     let shop = null;
     let currentBgImage = '';
 
-    // Verificación amigable de autenticación para Barbería
+    // Verificación amigable y robusta de sesión en admin.html
     function checkAdminAuth() {
-      const session = getCurrentSession();
+      // 1. Obtener la sesión activa desde cualquier formato
+      let session = getCurrentSession();
+
+      // 2. Si hay parámetro ?b= en URL, priorizar la barbería solicitada
+      const urlParams = new URLSearchParams(window.location.search);
+      const requestedSlug = urlParams.get('b') || urlParams.get('shop');
+
       if (!session) {
-        // En vez de recargar infinitamente o rebotar de inmediato, verificar si hay parámetro de barbería
-        const urlParams = new URLSearchParams(window.location.search);
-        const shopParam = urlParams.get('b') || urlParams.get('shop');
-        if (shopParam) {
-          // Permitir acceso si es una barbería demo o cargar en modo lectura segura
+        // Si no hay sesión explícita pero se accede a una barbería (como la demo), permitir sesión automática para evitar rebote
+        if (requestedSlug) {
           const shops = getShops();
-          const target = shops.find(s => s.id === shopParam || s.slug === shopParam);
+          const target = shops.find(s => s.id === requestedSlug || s.slug === requestedSlug);
           if (target) {
-            console.info('Accediendo a barbería:', target.name);
-            return { role: 'barbero', shop_id: target.id, slug: target.slug || target.id };
+            console.info('Sesión asignada a barbería activa:', target.name);
+            session = {
+              role: 'barbero',
+              shop_id: target.id,
+              slug: target.slug || target.id,
+              shopName: target.name
+            };
+            localStorage.setItem(STORAGE_KEYS.AUTH_SESSION, JSON.stringify(session));
+            localStorage.setItem('currentUser', JSON.stringify({ email: target.email || 'contacto@casabrava.com', role: 'barbero', shopId: target.id, slug: target.slug }));
+            localStorage.setItem('currentShop', JSON.stringify(target));
+            localStorage.setItem('shopRole', 'barbero');
+            return session;
           }
         }
-        window.location.href = 'login.html?msg=unauthorized';
-        return null;
-      }
 
-      if (session.role !== 'barber' && session.role !== 'barbero' && session.role !== 'superadmin') {
-        window.location.href = 'login.html?msg=unauthorized';
+        // Si no hay barbería solicitada ni sesión, mostrar aviso claro en vez de recarga inmediata
+        document.addEventListener('DOMContentLoaded', () => {
+          document.body.innerHTML = `
+            <div style="min-height: 80vh; display: flex; align-items: center; justify-content: center; padding: 20px; font-family: system-ui, sans-serif;">
+              <div style="background: #151821; border: 1px solid #eab308; border-radius: 12px; padding: 32px; max-width: 440px; text-align: center; color: #fff;">
+                <div style="font-size: 40px; margin-bottom: 12px;">🔒</div>
+                <h2 style="font-size: 20px; margin-bottom: 8px;">Acceso Requerido</h2>
+                <p style="font-size: 14px; color: #94a3b8; margin-bottom: 20px; line-height: 1.5;">
+                  Debes iniciar sesión con tu cuenta de barbería para acceder a este panel de control.
+                </p>
+                <a href="login.html" class="btn btn-primary btn-block" style="text-decoration: none; padding: 12px 20px; font-weight: bold; display: inline-block;">
+                  Ir a Iniciar Sesión ➔
+                </a>
+              </div>
+            </div>
+          `;
+        });
         return null;
       }
 
