@@ -519,7 +519,7 @@
       }
     }
 
-    function handleCreateShop(e) {
+    async function handleCreateShop(e) {
       if (e) e.preventDefault();
 
       try {
@@ -611,6 +611,16 @@
         }
 
         saveShops(shops);
+
+        // Inserción directa en la tabla shops de Supabase
+        if (typeof supabaseFetch === 'function' && typeof mapShopToSupabase === 'function') {
+          try {
+            await supabaseFetch('shops', 'POST', mapShopToSupabase(newShop), { 'Prefer': 'resolution=merge-duplicates' });
+          } catch (cloudErr) {
+            console.warn('Aviso sincronización Supabase nueva barbería:', cloudErr);
+          }
+        }
+
         closeNewShopModal();
         renderSuperAdmin();
 
@@ -620,7 +630,7 @@
         if (phoneInput) phoneInput.value = '';
         if (emailInput) emailInput.value = '';
 
-        alert(`✅ ¡Barbería "${name}" creada con éxito!\n\n🔑 Acceso Barbero: ${email} (clave: ${password})\n📱 Link App Clientes: ${getShopBookingUrl(cleanSlug)}`);
+        alert(`✅ ¡Barbería "${name}" creada y sincronizada en Supabase con éxito!\n\n🔑 Acceso Barbero: ${email} (clave: ${password})\n📱 Link App Clientes: ${getShopBookingUrl(cleanSlug)}`);
       } catch (err) {
         console.error('Error guardando barbería:', err);
         alert('Hubo un detalle al guardar: ' + err.message);

@@ -142,7 +142,7 @@
 
   <script src="app.js"></script>
   <script>
-    function handleLogin(e) {
+    async function handleLogin(e) {
       e.preventDefault();
       const email = document.getElementById('loginEmail').value.trim();
       const password = document.getElementById('loginPassword').value.trim();
@@ -153,10 +153,10 @@
       alertBox.style.display = 'none';
 
       submitBtn.disabled = true;
-      submitBtn.innerText = 'Verificando credenciales...';
+      submitBtn.innerText = 'Verificando con Supabase...';
 
-      setTimeout(() => {
-        const result = authenticateUser(email, password);
+      try {
+        const result = await authenticateUser(email, password);
 
         if (!result.success) {
           alertBox.className = 'auth-alert error';
@@ -169,13 +169,13 @@
 
         // Si es SuperAdmin
         if (result.role === 'superadmin') {
+          submitBtn.innerText = '¡Acceso Concedido! Redirigiendo...';
           window.location.href = 'superadmin.html';
           return;
         }
 
         // Si es Barbería
         if (result.role === 'barber') {
-          // Validar estado de la cuenta (activo, suspendido, demo expirada)
           const shop = result.shop;
           const statusCheck = checkShopAccessStatus(shop);
 
@@ -189,9 +189,17 @@
             return;
           }
 
+          submitBtn.innerText = '¡Acceso Concedido! Entrando a tu panel...';
           window.location.href = `admin.html?shop=${encodeURIComponent(shop.id)}`;
         }
-      }, 350);
+      } catch (err) {
+        console.error('Error durante autenticación:', err);
+        alertBox.className = 'auth-alert error';
+        alertBox.innerText = 'Ocurrió un error al verificar tus datos. Inténtalo de nuevo.';
+        alertBox.style.display = 'block';
+        submitBtn.disabled = false;
+        submitBtn.innerText = 'Ingresar al Panel Seguro ➔';
+      }
     }
 
     window.onload = async function() {

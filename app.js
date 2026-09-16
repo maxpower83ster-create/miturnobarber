@@ -482,9 +482,13 @@ function setActiveShop(id) {
 // SISTEMA DE AUTENTICACIÓN Y SEGURIDAD (SESSION & LOGIN)
 // =========================================================================
 
-function authenticateUser(email, password) {
+async function authenticateUser(email, password) {
   const cleanEmail = (email || '').toLowerCase().trim();
   const cleanPass = (password || '').trim();
+
+  if (!cleanEmail || !cleanPass) {
+    return { success: false, message: 'Por favor completa todos los campos.' };
+  }
 
   // 1. Verificar SuperAdmin
   if (cleanEmail === SUPERADMIN_ACCOUNT.email && cleanPass === SUPERADMIN_ACCOUNT.password) {
@@ -499,7 +503,49 @@ function authenticateUser(email, password) {
     return { success: true, role: 'superadmin', session };
   }
 
-  // 2. Verificar Barberías Clientes
+  // 2. Consultar directamente la tabla `shops` en Supabase
+  try {
+    const encodedEmail = encodeURIComponent(cleanEmail);
+    const remoteShops = await supabaseFetch(`shops?email=eq.${encodedEmail}&select=*`);
+
+    if (Array.isArray(remoteShops) && remoteShops.length > 0) {
+      const dbShopRow = remoteShops[0];
+      const parsedShop = mapShopFromSupabase(dbShopRow);
+
+      // Validar contraseña
+      if (parsedShop.password !== cleanPass) {
+        return { success: false, message: 'La contraseña ingresada es incorrecta.' };
+      }
+
+      // Guardar barbería actualizada en caché local
+      const currentShops = getShops();
+      const existingIdx = currentShops.findIndex(s => s.id === parsedShop.id || s.email === cleanEmail);
+      if (existingIdx >= 0) {
+        currentShops[existingIdx] = parsedShop;
+      } else {
+        currentShops.push(parsedShop);
+      }
+      localStorage.setItem(STORAGE_KEYS.SHOPS, JSON.stringify(currentShops));
+
+      const session = {
+        role: 'barber',
+        shopId: parsedShop.id,
+        shopSlug: parsedShop.slug || parsedShop.id,
+        shopName: parsedShop.name,
+        email: cleanEmail,
+        token: 'bk_' + Date.now(),
+        loginAt: new Date().toISOString()
+      };
+      localStorage.setItem(STORAGE_KEYS.AUTH_SESSION, JSON.stringify(session));
+      localStorage.setItem(STORAGE_KEYS.ACTIVE_SHOP_ID, parsedShop.id);
+
+      return { success: true, role: 'barber', shop: parsedShop, session };
+    }
+  } catch (err) {
+    console.warn('Fallo consulta directa a Supabase en login, intentando con caché local:', err);
+  }
+
+  // 3. Fallback en caché local (si Supabase no responde o estuviera offline)
   const shops = getShops();
   const shop = shops.find(s => (s.email || '').toLowerCase().trim() === cleanEmail);
 
@@ -522,6 +568,7 @@ function authenticateUser(email, password) {
   };
 
   localStorage.setItem(STORAGE_KEYS.AUTH_SESSION, JSON.stringify(session));
+  localStorage.setItem(STORAGE_KEYS.ACTIVE_SHOP_ID, shop.id);
   return { success: true, role: 'barber', shop, session };
 }
 
@@ -536,6 +583,17 @@ function getCurrentSession() {
 
 function logoutSession() {
   localStorage.removeItem(STORAGE_KEYS.AUTH_SESSION);
+}
+
+function logoutUser() {
+  logoutSession();
+  window.location.href = 'login.html';
+}
+
+function handleAdminLogout() {
+  if (confirm('¿Deseas cerrar la sesión de tu panel?')) {
+    logoutUser();
+  }
 }
 
 // Control de Acceso y Bloqueo de Cuentas (Demos y Suscripciones)
