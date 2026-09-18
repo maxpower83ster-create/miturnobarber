@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Super Admin SaaS | BarberFlow Salto</title>
   <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
     // GUARDIÁN DE SEGURIDAD CRÍTICO INMEDIATO (Antes de pintar la página)
     (function() {
@@ -365,11 +366,24 @@
       let shops = [];
 
       // 1. SELECT directo a Supabase
-      if (typeof supabaseFetch === 'function') {
+      if (supabase && typeof supabase.from === 'function') {
+        try {
+          const { data, error } = await supabase.from('shops').select('*').order('created_at', { ascending: false });
+          if (error) {
+            console.error('Detalle error Supabase (select):', error);
+          } else if (data && Array.isArray(data)) {
+            shops = data
+              .filter(r => r.role !== 'superadmin' && r.email !== 'admin@miturnobarber.com')
+              .map(mapShopFromSupabase);
+            localStorage.setItem(STORAGE_KEYS.SHOPS, JSON.stringify(shops));
+          }
+        } catch (fetchErr) {
+          console.warn('Consulta directa a Supabase falló, usando caché local:', fetchErr);
+        }
+      } else if (typeof supabaseFetch === 'function') {
         try {
           const res = await supabaseFetch('shops?select=*&order=created_at.desc');
           if (res && res.data && Array.isArray(res.data)) {
-            // Filtrar cuenta superadmin si viene en shops
             shops = res.data
               .filter(r => r.role !== 'superadmin' && r.email !== 'admin@miturnobarber.com')
               .map(mapShopFromSupabase);
@@ -538,7 +552,10 @@
         s.status = newStatus;
         localStorage.setItem(STORAGE_KEYS.SHOPS, JSON.stringify(local));
 
-        if (typeof supabaseFetch === 'function') {
+        if (supabase && typeof supabase.from === 'function') {
+          const { error } = await supabase.from('shops').update({ status: newStatus }).eq('id', shopId);
+          if (error) console.error('Detalle error Supabase (update status):', error);
+        } else if (typeof supabaseFetch === 'function') {
           await supabaseFetch(`shops?id=eq.${shopId}`, 'PATCH', { status: newStatus });
         }
         await renderSuperAdmin();
@@ -591,7 +608,13 @@
         localStorage.setItem(STORAGE_KEYS.SHOPS, JSON.stringify(local));
       }
 
-      if (typeof supabaseFetch === 'function') {
+      if (supabase && typeof supabase.from === 'function') {
+        const { error } = await supabase.from('shops').update({ plan: plan, monthly_fee: fee }).eq('id', shopId);
+        if (error) {
+          console.error('Detalle error Supabase (update plan):', error);
+          alert('Detalle al actualizar en Supabase: ' + error.message);
+        }
+      } else if (typeof supabaseFetch === 'function') {
         const res = await supabaseFetch(`shops?id=eq.${shopId}`, 'PATCH', {
           plan: plan,
           monthly_fee: fee
@@ -614,7 +637,10 @@
         s.subscriptionStatus = 'active';
         localStorage.setItem(STORAGE_KEYS.SHOPS, JSON.stringify(local));
 
-        if (typeof supabaseFetch === 'function') {
+        if (supabase && typeof supabase.from === 'function') {
+          const { error } = await supabase.from('shops').update({ status: 'active' }).eq('id', shopId);
+          if (error) console.error('Detalle error Supabase (activate):', error);
+        } else if (typeof supabaseFetch === 'function') {
           await supabaseFetch(`shops?id=eq.${shopId}`, 'PATCH', {
             status: 'active'
           });
@@ -637,7 +663,10 @@
         s.trialEndsAt = currentEnd.toISOString();
         localStorage.setItem(STORAGE_KEYS.SHOPS, JSON.stringify(local));
 
-        if (typeof supabaseFetch === 'function') {
+        if (supabase && typeof supabase.from === 'function') {
+          const { error } = await supabase.from('shops').update({ status: 'trial', trial_ends_at: s.trialEndsAt }).eq('id', shopId);
+          if (error) console.error('Detalle error Supabase (extend trial):', error);
+        } else if (typeof supabaseFetch === 'function') {
           await supabaseFetch(`shops?id=eq.${shopId}`, 'PATCH', {
             status: 'trial',
             trial_ends_at: s.trialEndsAt
@@ -734,16 +763,14 @@
         ]
       };
 
-      const supabasePayload = mapShopToSupabase(newShop);
+      const nuevaBarberia = mapShopToSupabase(newShop);
 
-      // INSERT directo en la tabla shops de Supabase
-      const res = await supabaseFetch('shops', 'POST', supabasePayload, {
-        'Prefer': 'return=representation'
-      });
+      // INSERT directo en la tabla shops usando la API nativa de Supabase
+      const { data, error } = await supabase.from('shops').insert([ nuevaBarberia ]);
 
-      if (res && res.error) {
-        console.error('Error insertando barbería en Supabase:', res.error);
-        alert('Error al registrar en Supabase:\n' + (res.error.message || JSON.stringify(res.error)));
+      if (error) {
+        console.error('Detalle error Supabase:', error);
+        alert('Error al registrar en Supabase:\n' + (error.message || JSON.stringify(error)));
         return;
       }
 

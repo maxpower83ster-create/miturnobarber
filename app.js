@@ -13,10 +13,18 @@ const STORAGE_KEYS = {
 // =========================================================================
 // CONFIGURACIÓN SUPABASE EN TIEMPO REAL (CLOUD DATABASE)
 // =========================================================================
+const SUPABASE_URL = 'https://tgxdllqnsspohfubqps.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRneGRsbHFuc3Nwb2hmdWJxcHMiLCJyb2xlIjoiYW5vbiIsImlhdCI6MTc2MDk5MTYwMSwiZXhwIjoyMDc2NTY3NjAxfQ.sB-B-aLTY8uRt5PT6fHEJeI71VbCyy3oB_cYh15m4';
+
 const SUPABASE_CONFIG = {
-  url: 'https://tgxdllqnsspohfubqps.supabase.co',
-  anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRneGRsbHFuc3Nwb2hmdWJxcHMiLCJyb2xlIjoiYW5vbiIsImlhdCI6MTc2MDk5MTYwMSwiZXhwIjoyMDc2NTY3NjAxfQ.sB-B-aLTY8uRt5PT6fHEJeI71VbCyy3oB_cYh15m4'
+  url: SUPABASE_URL,
+  anonKey: SUPABASE_ANON_KEY
 };
+
+let supabase = null;
+if (window.supabase && typeof window.supabase.createClient === 'function') {
+  supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+}
 
 // Cliente REST directo y resiliente para Supabase
 async function supabaseFetch(endpoint, method = 'GET', body = null, extraHeaders = {}) {
