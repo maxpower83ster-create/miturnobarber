@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Super Admin SaaS | BarberFlow Salto</title>
   <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 
@@ -373,43 +374,37 @@
       }
     }
 
-    async function renderSuperAdmin() {
-      let shops = [];
-
-      // 1. SELECT directo a Supabase
-      if (supabase && typeof supabase.from === 'function') {
-        try {
-          const { data, error } = await supabase.from('shops').select('*').order('created_at', { ascending: false });
+    async function cargarBarberiasDesdeSupabase() {
+      let remoteShops = [];
+      try {
+        if (supabase && typeof supabase.from === 'function') {
+          const { data, error } = await supabase.from('shops').select('*').neq('role', 'superadmin').order('created_at', { ascending: false });
           if (error) {
-            console.error('Detalle error Supabase (select):', error);
+            console.error('Error al cargar barberías de Supabase:', error);
           } else if (data && Array.isArray(data)) {
-            shops = data
-              .filter(r => r.role !== 'superadmin' && r.email !== 'admin@miturnobarber.com')
-              .map(mapShopFromSupabase);
-            localStorage.setItem(STORAGE_KEYS.SHOPS, JSON.stringify(shops));
+            remoteShops = data.map(mapShopFromSupabase);
+            localStorage.setItem(STORAGE_KEYS.SHOPS, JSON.stringify(remoteShops));
+            return remoteShops;
           }
-        } catch (fetchErr) {
-          console.warn('Consulta directa a Supabase falló, usando caché local:', fetchErr);
-        }
-      } else if (typeof supabaseFetch === 'function') {
-        try {
-          const res = await supabaseFetch('shops?select=*&order=created_at.desc');
+        } else if (typeof supabaseFetch === 'function') {
+          const res = await supabaseFetch('shops?role=neq.superadmin&select=*&order=created_at.desc');
           if (res && res.data && Array.isArray(res.data)) {
-            shops = res.data
-              .filter(r => r.role !== 'superadmin' && r.email !== 'admin@miturnobarber.com')
-              .map(mapShopFromSupabase);
-            localStorage.setItem(STORAGE_KEYS.SHOPS, JSON.stringify(shops));
+            remoteShops = res.data.map(mapShopFromSupabase);
+            localStorage.setItem(STORAGE_KEYS.SHOPS, JSON.stringify(remoteShops));
+            return remoteShops;
           }
-        } catch (fetchErr) {
-          console.warn('Consulta directa a Supabase falló, usando caché local:', fetchErr);
         }
+      } catch (err) {
+        console.warn('Fallo al conectar con Supabase en lectura:', err);
       }
 
-      // 2. Si no se obtuvieron datos de la red, leer caché local
-      if (shops.length === 0) {
-        const local = JSON.parse(localStorage.getItem(STORAGE_KEYS.SHOPS) || '[]');
-        shops = local.filter(s => s.role !== 'superadmin' && s.email !== 'admin@miturnobarber.com');
-      }
+      // Fallback a localStorage si la red no responde
+      const local = JSON.parse(localStorage.getItem(STORAGE_KEYS.SHOPS) || '[]');
+      return local.filter(s => s.role !== 'superadmin' && s.email !== 'admin@miturnobarber.com');
+    }
+
+    async function renderSuperAdmin() {
+      const shops = await cargarBarberiasDesdeSupabase();
       
       let totalMRR = 0;
       let activeCount = 0;
@@ -724,98 +719,85 @@
         return;
       }
 
-      // Generar slug limpio para la URL
+      // Generar ID único y slug limpio
       const cleanSlug = name.toLowerCase()
         .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
         .replace(/[^a-z0-9]+/g, '-')
-        .replace(/^-+|-+$/g, '') || ('shop-' + Date.now());
+        .replace(/^-+|-+$/g, '') || ('shop_' + Date.now());
+      const shopUniqueId = 'shop_' + Date.now();
 
       const trialEnds = new Date();
       trialEnds.setDate(trialEnds.getDate() + trialDays);
 
-      const newShop = {
-        id: cleanSlug,
+      // Objeto validado con campos requeridos por la tabla shops
+      const nuevaBarberia = {
+        id: shopUniqueId,
+        slug: cleanSlug,
         name: name,
-        subtitle: 'BARBERÍA & ESTILO',
-        heroTitle: 'Tu estilo habla por ti.',
-        heroHighlight: 'Defínelo con expertos.',
-        tagline: 'Las mejores reservas y cortes profesionales en Salto.',
-        address: address,
-        phone: phone,
         email: email,
-        password: password,
-        status: status,
-        subscriptionStatus: status,
-        trialDays: trialDays,
-        trialEndsAt: trialEnds.toISOString(),
-        plan: plan,
-        hasStore: hasStore,
-        monthlyFee: fee,
-        logoEmoji: emoji,
-        brandColor: '#00ff88',
+        password_hash: password,
+        role: 'barbero',
+        status: status || 'active',
+        trial_days: Number(trialDays) || 7,
+        phone: phone,
+        address: address,
+        trial_ends_at: trialEnds.toISOString(),
+        monthly_fee: Number(fee) || 1900,
+        plan: plan || 'pro',
+        brand_color: '#00ff88',
         promotions: getDefaultPromotionsConfig(),
-        workingHours: {
+        working_hours: {
           start: '09:00',
           end: '20:00',
           intervalMinutes: 45,
           daysOpen: ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado']
         },
         barbers: [
-          { id: 'b-' + Date.now(), name: 'Barbero Titular', photo: 'https://images.unsplash.com/photo-1583863788434-e58a36330cf0?w=200&q=80', role: 'Barbero Titular • Fade', commissionRate: 0.50, daysOff: [0], phone: phone }
+          { id: 'b_' + Date.now(), name: 'Barbero Titular', photo: 'https://images.unsplash.com/photo-1583863788434-e58a36330cf0?w=200&q=80', role: 'Barbero Titular • Fade', commissionRate: 0.50, daysOff: [0], phone: phone }
         ],
         services: [
-          { id: 's-1', name: 'Corte Clásico & Fade', price: 450, duration: '30 min', desc: 'Corte profesional con degradé y acabado impecable', photo: 'https://images.unsplash.com/photo-1622286342621-4bd786c2447c?w=160&q=80', isPromo: false },
-          { id: 's-2', name: 'Ritual Barba Tradicional', price: 350, duration: '30 min', desc: 'Perfilado a navaja, toalla caliente e hidratación', photo: 'https://images.unsplash.com/photo-1621605815971-fbc98d665033?w=160&q=80', isPromo: false },
-          { id: 's-3', name: 'Combo Completo (Pelo + Barba)', price: 700, duration: '60 min', desc: 'Experiencia completa corte y barba esculpida', photo: 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=160&q=80', isPromo: true }
+          { id: 's_1', name: 'Corte Clásico & Fade', price: 450, duration: '30 min', desc: 'Corte profesional con degradé y acabado impecable', photo: 'https://images.unsplash.com/photo-1622286342621-4bd786c2447c?w=160&q=80', isPromo: false },
+          { id: 's_2', name: 'Ritual Barba Tradicional', price: 350, duration: '30 min', desc: 'Perfilado a navaja, toalla caliente e hidratación', photo: 'https://images.unsplash.com/photo-1621605815971-fbc98d665033?w=160&q=80', isPromo: false },
+          { id: 's_3', name: 'Combo Completo (Pelo + Barba)', price: 700, duration: '60 min', desc: 'Experiencia completa corte y barba esculpida', photo: 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=160&q=80', isPromo: true }
         ],
         products: [
-          { id: 'p-1', name: 'Pomada Matte Gold (Fijación Fuerte)', price: 350, desc: 'Fijación fuerte y acabado natural mate', photo: 'https://images.unsplash.com/photo-1597854710119-a6a4220b33b9?w=160&q=80', active: true },
-          { id: 'p-2', name: 'Aceite Esencial para Barba', price: 320, desc: 'Hidratación con aroma a cedro noble', photo: 'https://images.unsplash.com/photo-1626806787461-102c1bfaaea1?w=160&q=80', active: true }
+          { id: 'p_1', name: 'Pomada Matte Gold (Fijación Fuerte)', price: 350, desc: 'Fijación fuerte y acabado natural mate', photo: 'https://images.unsplash.com/photo-1597854710119-a6a4220b33b9?w=160&q=80', active: true },
+          { id: 'p_2', name: 'Aceite Esencial para Barba', price: 320, desc: 'Hidratación con aroma a cedro noble', photo: 'https://images.unsplash.com/photo-1626806787461-102c1bfaaea1?w=160&q=80', active: true }
         ]
       };
 
-      const nuevaBarberia = mapShopToSupabase(newShop);
+      // DIAGNÓSTICO Y VISIBILIDAD DE OBJETO A INSERTAR
+      console.log("OBJETO A INSERTAR EN SHOPS:", nuevaBarberia);
 
-      // Guardar de inmediato localmente para que nunca se pierda ni bloquee la app
-      const local = JSON.parse(localStorage.getItem(STORAGE_KEYS.SHOPS) || '[]');
-      const existingIdx = local.findIndex(s => s.id === cleanSlug);
-      if (existingIdx >= 0) {
-        local[existingIdx] = newShop;
-      } else {
-        local.unshift(newShop);
+      // Asegurar inicialización de supabase client si aún no existe
+      if (!supabase && window.supabase && typeof window.supabase.createClient === 'function') {
+        supabase = window.supabase.createClient(SUPABASE_CONFIG.url, SUPABASE_CONFIG.anonKey);
       }
-      localStorage.setItem(STORAGE_KEYS.SHOPS, JSON.stringify(local));
 
-      // Intento de persistencia directa en Supabase (si está disponible y responde)
-      let supabaseSynced = false;
-      let syncErrorMsg = '';
+      let insertError = null;
+      let insertData = null;
 
       try {
         if (supabase && typeof supabase.from === 'function') {
-          const { data, error } = await supabase.from('shops').insert([ nuevaBarberia ]);
-          if (!error) {
-            supabaseSynced = true;
-          } else {
-            syncErrorMsg = error.message || JSON.stringify(error);
-            console.warn('Aviso Supabase insert:', syncErrorMsg);
-          }
-        } else if (typeof supabaseFetch === 'function') {
-          const res = await supabaseFetch('shops', 'POST', nuevaBarberia, { 'Prefer': 'resolution=merge-duplicates' });
-          if (res && !res.error) {
-            supabaseSynced = true;
-          } else if (res && res.error) {
-            syncErrorMsg = res.error.message;
-          }
+          const { data, error } = await supabase.from('shops').insert([ nuevaBarberia ]).select();
+          insertData = data;
+          insertError = error;
+        } else {
+          const res = await supabaseFetch('shops', 'POST', nuevaBarberia, { 'Prefer': 'return=representation' });
+          if (res && res.error) insertError = res.error;
+          else if (res && res.data) insertData = res.data;
         }
-      } catch (cloudErr) {
-        syncErrorMsg = cloudErr.message || 'Sin conexión';
-        console.warn('Supabase no disponible temporalmente:', cloudErr);
+      } catch (err) {
+        insertError = err;
       }
 
-      closeNewShopModal();
+      if (insertError) {
+        console.error("ERROR EXACTO SUPABASE:", insertError);
+        alert("Error de Supabase al guardar: " + (insertError.message || JSON.stringify(insertError)));
+        return;
+      }
 
-      // Refrescar tabla inmediatamente
-      await renderSuperAdmin();
+      alert("Barbería creada con éxito en la base de datos.");
 
       // Limpiar campos del formulario
       if (nameInput) nameInput.value = '';
@@ -823,11 +805,11 @@
       if (phoneInput) phoneInput.value = '';
       if (emailInput) emailInput.value = '';
 
-      if (supabaseSynced) {
-        alert(`✅ ¡Barbería "${name}" creada y guardada con éxito en Supabase y en la plataforma!\n\n🔑 Acceso Barbero: ${email} (clave: ${password})\n📱 Link App Clientes: ${getShopBookingUrl(cleanSlug)}`);
-      } else {
-        alert(`✅ ¡Barbería "${name}" guardada y dada de alta con éxito en la plataforma!\n\n⚠️ Nota de la nube: El servidor Supabase no respondió (${syncErrorMsg || 'en espera de reconexión'}). La barbería ya está activa y funcionando en tu panel.\n\n🔑 Acceso Barbero: ${email} (clave: ${password})\n📱 Link App Clientes: ${getShopBookingUrl(cleanSlug)}`);
-      }
+      closeNewShopModal();
+
+      // Vuelve a refrescar la lista de inmediato desde Supabase
+      await cargarBarberiasDesdeSupabase();
+      await renderSuperAdmin();
     }
 
     window.onload = async function() {
