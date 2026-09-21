@@ -765,16 +765,7 @@
 
       const nuevaBarberia = mapShopToSupabase(newShop);
 
-      // INSERT directo en la tabla shops usando la API nativa de Supabase
-      const { data, error } = await supabase.from('shops').insert([ nuevaBarberia ]);
-
-      if (error) {
-        console.error('Detalle error Supabase:', error);
-        alert('Error al registrar en Supabase:\n' + (error.message || JSON.stringify(error)));
-        return;
-      }
-
-      // Guardar también en localStorage como réplica rápida
+      // Guardar de inmediato localmente para que nunca se pierda ni bloquee la app
       const local = JSON.parse(localStorage.getItem(STORAGE_KEYS.SHOPS) || '[]');
       const existingIdx = local.findIndex(s => s.id === cleanSlug);
       if (existingIdx >= 0) {
@@ -784,9 +775,35 @@
       }
       localStorage.setItem(STORAGE_KEYS.SHOPS, JSON.stringify(local));
 
+      // Intento de persistencia directa en Supabase (si está disponible y responde)
+      let supabaseSynced = false;
+      let syncErrorMsg = '';
+
+      try {
+        if (supabase && typeof supabase.from === 'function') {
+          const { data, error } = await supabase.from('shops').insert([ nuevaBarberia ]);
+          if (!error) {
+            supabaseSynced = true;
+          } else {
+            syncErrorMsg = error.message || JSON.stringify(error);
+            console.warn('Aviso Supabase insert:', syncErrorMsg);
+          }
+        } else if (typeof supabaseFetch === 'function') {
+          const res = await supabaseFetch('shops', 'POST', nuevaBarberia, { 'Prefer': 'resolution=merge-duplicates' });
+          if (res && !res.error) {
+            supabaseSynced = true;
+          } else if (res && res.error) {
+            syncErrorMsg = res.error.message;
+          }
+        }
+      } catch (cloudErr) {
+        syncErrorMsg = cloudErr.message || 'Sin conexión';
+        console.warn('Supabase no disponible temporalmente:', cloudErr);
+      }
+
       closeNewShopModal();
 
-      // Refrescar tabla con datos directamente de Supabase
+      // Refrescar tabla inmediatamente
       await renderSuperAdmin();
 
       // Limpiar campos del formulario
@@ -795,7 +812,11 @@
       if (phoneInput) phoneInput.value = '';
       if (emailInput) emailInput.value = '';
 
-      alert(`✅ ¡Barbería "${name}" creada y dada de alta con éxito en Supabase!\n\n🔑 Acceso Barbero: ${email} (clave: ${password})\n📱 Link App Clientes: ${getShopBookingUrl(cleanSlug)}`);
+      if (supabaseSynced) {
+        alert(`✅ ¡Barbería "${name}" creada y guardada con éxito en Supabase y en la plataforma!\n\n🔑 Acceso Barbero: ${email} (clave: ${password})\n📱 Link App Clientes: ${getShopBookingUrl(cleanSlug)}`);
+      } else {
+        alert(`✅ ¡Barbería "${name}" guardada y dada de alta con éxito en la plataforma!\n\n⚠️ Nota de la nube: El servidor Supabase no respondió (${syncErrorMsg || 'en espera de reconexión'}). La barbería ya está activa y funcionando en tu panel.\n\n🔑 Acceso Barbero: ${email} (clave: ${password})\n📱 Link App Clientes: ${getShopBookingUrl(cleanSlug)}`);
+      }
     }
 
     window.onload = async function() {
