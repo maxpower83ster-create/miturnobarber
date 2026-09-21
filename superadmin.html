@@ -337,7 +337,13 @@
 
     function handleSuperAdminLogout() {
       if (confirm('¿Deseas cerrar la sesión de Super Admin?')) {
-        localStorage.clear();
+        localStorage.removeItem('currentUser');
+        localStorage.removeItem('shopRole');
+        localStorage.removeItem('miturnobarber_auth_session_v9');
+        localStorage.removeItem('currentShop');
+        if (typeof STORAGE_KEYS !== 'undefined') {
+          localStorage.removeItem(STORAGE_KEYS.AUTH_SESSION);
+        }
         window.location.replace('login.html');
       }
     }
@@ -768,38 +774,23 @@
       const trialEnds = new Date();
       trialEnds.setDate(trialEnds.getDate() + trialDays);
 
-      // Objeto integral
-      const nuevaBarberia = {
+      // Objeto limpio exacto para Supabase (coincidencia 100% tipos y columnas PostgreSQL)
+      const supabasePayload = {
         id: shopUniqueId,
         slug: cleanSlug,
         name: name,
         email: email,
-        password: password,
         password_hash: password,
         role: 'barbero',
         status: status || 'active',
-        subscriptionStatus: status || 'active',
-        trialDays: Number(trialDays) || 7,
         trial_days: Number(trialDays) || 7,
-        phone: phone,
-        address: address,
-        trialEndsAt: trialEnds.toISOString(),
         trial_ends_at: trialEnds.toISOString(),
-        monthlyFee: Number(fee) || 1900,
         monthly_fee: Number(fee) || 1900,
         plan: plan || 'pro',
-        hasStore: hasStore,
-        logoEmoji: emoji,
-        brandColor: '#00ff88',
+        phone: phone,
+        address: address,
         brand_color: '#00ff88',
-        created_at: new Date().toISOString(),
         promotions: getDefaultPromotionsConfig(),
-        workingHours: {
-          start: '09:00',
-          end: '20:00',
-          intervalMinutes: 45,
-          daysOpen: ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado']
-        },
         working_hours: {
           start: '09:00',
           end: '20:00',
@@ -817,7 +808,20 @@
         products: [
           { id: 'p_1', name: 'Pomada Matte Gold (Fijación Fuerte)', price: 350, desc: 'Fijación fuerte y acabado natural mate', photo: 'https://images.unsplash.com/photo-1597854710119-a6a4220b33b9?w=160&q=80', active: true },
           { id: 'p_2', name: 'Aceite Esencial para Barba', price: 320, desc: 'Hidratación con aroma a cedro noble', photo: 'https://images.unsplash.com/photo-1626806787461-102c1bfaaea1?w=160&q=80', active: true }
-        ]
+        ],
+        created_at: new Date().toISOString()
+      };
+
+      // Objeto local para renderizado
+      const nuevaBarberia = {
+        ...supabasePayload,
+        password: password,
+        monthlyFee: Number(fee) || 1900,
+        trialDays: Number(trialDays) || 7,
+        trialEndsAt: trialEnds.toISOString(),
+        hasStore: hasStore,
+        logoEmoji: emoji,
+        subscriptionStatus: status || 'active'
       };
 
       console.log("GUARDANDO NUEVA BARBERÍA:", nuevaBarberia);
@@ -831,12 +835,13 @@
         localStorage.setItem(STORAGE_KEYS.SHOPS, JSON.stringify(locales));
       }
 
-      // 2. Intentar guardar en Supabase en segundo plano sin bloquear
+      // 2. Enviar a Supabase con payload limpio sin campos ajenos
       try {
         const client = window.supabaseClient || supabase;
         if (client && typeof client.from === 'function') {
-          client.from('shops').upsert([ nuevaBarberia ]).then(({ error }) => {
-            if (error) console.warn("Aviso Supabase upsert:", error);
+          client.from('shops').upsert([ supabasePayload ]).then(({ data, error }) => {
+            if (error) console.error("Aviso Supabase upsert error:", error);
+            else console.log("Guardado en Supabase exitoso:", data);
           }).catch(err => {
             console.warn("Aviso Supabase upsert offline:", err);
           });
