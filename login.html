@@ -154,6 +154,9 @@
           const userObj = { email: email, role: 'superadmin', name: result.session?.name || 'Super Admin' };
           localStorage.setItem('currentUser', JSON.stringify(userObj));
           localStorage.setItem('shopRole', 'superadmin');
+          if (result.session) {
+            localStorage.setItem(STORAGE_KEYS.AUTH_SESSION, JSON.stringify(result.session));
+          }
 
           submitBtn.innerText = '¡Acceso Concedido! Redirigiendo...';
           window.location.href = 'superadmin.html';

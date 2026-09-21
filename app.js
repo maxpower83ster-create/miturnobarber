@@ -26,7 +26,7 @@ if (window.supabase && typeof window.supabase.createClient === 'function') {
   supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 }
 
-// Cliente REST directo y resiliente para Supabase
+// Cliente REST directo y resiliente para Supabase con timeout de 1.5s
 async function supabaseFetch(endpoint, method = 'GET', body = null, extraHeaders = {}) {
   try {
     const url = `${SUPABASE_CONFIG.url}/rest/v1/${endpoint}`;
@@ -36,11 +36,19 @@ async function supabaseFetch(endpoint, method = 'GET', body = null, extraHeaders
       'Content-Type': 'application/json',
       ...extraHeaders
     };
-    const options = { method, headers };
+    
+    // Timeout automático para no congelar la pantalla si la nube está caída o pausada
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 1500);
+
+    const options = { method, headers, signal: controller.signal };
     if (body && (method === 'POST' || method === 'PATCH' || method === 'PUT')) {
       options.body = JSON.stringify(body);
     }
+    
     const res = await fetch(url, options);
+    clearTimeout(timeoutId);
+
     if (!res.ok) {
       let errDetail = '';
       try {
@@ -58,7 +66,7 @@ async function supabaseFetch(endpoint, method = 'GET', body = null, extraHeaders
     }
     return { data: true, error: null };
   } catch (err) {
-    console.warn(`Supabase offline o error de red (${endpoint}):`, err);
+    console.warn(`Supabase offline o error de red (${endpoint}):`, err.name === 'AbortError' ? 'Tiempo de espera agotado (Timeout)' : err.message);
     return { error: { message: err.message || 'Error de red o conexión a Supabase' }, data: null };
   }
 }
@@ -505,7 +513,22 @@ async function authenticateUser(email, password) {
     return { success: false, message: 'Por favor completa todos los campos.' };
   }
 
-  // 1. Verificación directa en Supabase: SELECT * FROM shops WHERE email = [email] AND password_hash = [password]
+  // 1. Verificación instantánea de cuenta maestra SuperAdmin (independiente de si Supabase está activo o pausado)
+  if (cleanEmail === SUPERADMIN_ACCOUNT.email && cleanPass === SUPERADMIN_ACCOUNT.password) {
+    const session = {
+      role: 'superadmin',
+      email: cleanEmail,
+      name: SUPERADMIN_ACCOUNT.name,
+      token: 'sa_' + Date.now(),
+      loginAt: new Date().toISOString()
+    };
+    localStorage.setItem(STORAGE_KEYS.AUTH_SESSION, JSON.stringify(session));
+    localStorage.setItem('currentUser', JSON.stringify({ email: cleanEmail, role: 'superadmin', name: SUPERADMIN_ACCOUNT.name }));
+    localStorage.setItem('shopRole', 'superadmin');
+    return { success: true, role: 'superadmin', session };
+  }
+
+  // 2. Verificación directa en Supabase: SELECT * FROM shops WHERE email = [email] AND password_hash = [password]
   try {
     const encodedEmail = encodeURIComponent(cleanEmail);
     const res = await supabaseFetch(`shops?email=eq.${encodedEmail}&select=*`);
@@ -520,8 +543,8 @@ async function authenticateUser(email, password) {
         return { success: false, message: 'Credenciales inválidas' };
       }
 
-      // Caso A: Si el rol es superadmin (o si es la cuenta maestra admin@miturnobarber.com)
-      if (dbRow.role === 'superadmin' || cleanEmail === SUPERADMIN_ACCOUNT.email) {
+      // Caso A: Si el rol es superadmin en Supabase
+      if (dbRow.role === 'superadmin') {
         const session = {
           role: 'superadmin',
           email: cleanEmail,
@@ -530,6 +553,8 @@ async function authenticateUser(email, password) {
           loginAt: new Date().toISOString()
         };
         localStorage.setItem(STORAGE_KEYS.AUTH_SESSION, JSON.stringify(session));
+        localStorage.setItem('currentUser', JSON.stringify({ email: cleanEmail, role: 'superadmin', name: session.name }));
+        localStorage.setItem('shopRole', 'superadmin');
         return { success: true, role: 'superadmin', session };
       }
 
@@ -562,21 +587,6 @@ async function authenticateUser(email, password) {
     }
   } catch (err) {
     console.warn('Aviso de consulta a Supabase en login:', err);
-  }
-
-  // 2. Fallback de cuenta maestra SuperAdmin
-  if (cleanEmail === SUPERADMIN_ACCOUNT.email && cleanPass === SUPERADMIN_ACCOUNT.password) {
-    const session = {
-      role: 'superadmin',
-      email: cleanEmail,
-      name: SUPERADMIN_ACCOUNT.name,
-      token: 'sa_' + Date.now(),
-      loginAt: new Date().toISOString()
-    };
-    localStorage.setItem(STORAGE_KEYS.AUTH_SESSION, JSON.stringify(session));
-    localStorage.setItem('currentUser', JSON.stringify({ email: cleanEmail, role: 'superadmin', name: SUPERADMIN_ACCOUNT.name }));
-    localStorage.setItem('shopRole', 'superadmin');
-    return { success: true, role: 'superadmin', session };
   }
 
   // 3. Fallback de barberías locales en caché
