@@ -516,7 +516,7 @@
         <h3 style="font-size: 16px; font-weight: bold; color: #fff;">🛍️ Agregar Producto a la Tienda</h3>
         <button onclick="closeAddProductModal()" style="background: none; border: none; color: var(--text-muted); font-size: 18px; cursor: pointer;">✕</button>
       </div>
-      <form onsubmit="handleSaveProduct(event)">
+      <form id="formAddProduct" onsubmit="event.preventDefault(); handleSaveProduct(event); return false;">
         <div class="form-group">
           <label class="form-label">Nombre del Producto:</label>
           <input type="text" id="prodName" class="form-input" placeholder="Ej: Pomada Matte Fijación Extra" required>
@@ -534,21 +534,21 @@
         <div class="image-presets-container">
           <label class="image-preset-label">📷 Selecciona una foto para el producto:</label>
           <div class="image-presets-grid" id="productPresetsGrid">
-            <div class="image-preset-card active" onclick="selectProductPreset('https://images.unsplash.com/photo-1597854710119-a5a84399e937?w=400&q=80', this)">
-              <img src="https://images.unsplash.com/photo-1597854710119-a5a84399e937?w=400&q=80" alt="Pomada / Cera" loading="lazy">
+            <div class="image-preset-card active" onclick="selectProductPreset('https://images.unsplash.com/photo-1597854710119-a5a84399e937?w=500&q=80', this)">
+              <img src="https://images.unsplash.com/photo-1597854710119-a5a84399e937?w=500&q=80" alt="Pomada / Cera" loading="lazy">
               <div class="image-preset-title">Pomada / Cera</div>
             </div>
-            <div class="image-preset-card" onclick="selectProductPreset('https://images.unsplash.com/photo-1608248597359-2169b9173a1a?w=400&q=80', this)">
-              <img src="https://images.unsplash.com/photo-1608248597359-2169b9173a1a?w=400&q=80" alt="Aceite para Barba" loading="lazy">
+            <div class="image-preset-card" onclick="selectProductPreset('https://images.unsplash.com/photo-1608248597359-2169b9173a1a?w=500&q=80', this)">
+              <img src="https://images.unsplash.com/photo-1608248597359-2169b9173a1a?w=500&q=80" alt="Aceite para Barba" loading="lazy">
               <div class="image-preset-title">Aceite para Barba</div>
             </div>
-            <div class="image-preset-card" onclick="selectProductPreset('https://images.unsplash.com/photo-1535585209827-a15fcdbc4c2d?w=400&q=80', this)">
-              <img src="https://images.unsplash.com/photo-1535585209827-a15fcdbc4c2d?w=400&q=80" alt="Shampoo / Cuidado" loading="lazy">
+            <div class="image-preset-card" onclick="selectProductPreset('https://images.unsplash.com/photo-1535585209827-a15fcdbc4c2d?w=500&q=80', this)">
+              <img src="https://images.unsplash.com/photo-1535585209827-a15fcdbc4c2d?w=500&q=80" alt="Shampoo / Cuidado" loading="lazy">
               <div class="image-preset-title">Shampoo / Cuidado</div>
             </div>
           </div>
           <label class="form-label" style="font-size: 11px; margin-top: 6px;">O pega el enlace de tu propia foto (opcional):</label>
-          <input type="url" id="prodImage" class="form-input" placeholder="https://..." value="https://images.unsplash.com/photo-1597854710119-a5a84399e937?w=400&q=80" oninput="onCustomProductPhotoInput()">
+          <input type="url" id="prodImage" class="form-input" placeholder="https://..." value="https://images.unsplash.com/photo-1597854710119-a5a84399e937?w=500&q=80" oninput="onCustomProductPhotoInput()">
         </div>
 
         <div style="display: flex; gap: 8px; margin-top: 16px;">
@@ -566,7 +566,7 @@
         <h3 style="font-size: 16px; font-weight: bold; color: #fff;">+ Agregar Nuevo Corte / Servicio</h3>
         <button onclick="closeAddServiceModal()" style="background: none; border: none; color: var(--text-muted); font-size: 18px; cursor: pointer;">✕</button>
       </div>
-      <form onsubmit="handleSaveService(event)">
+      <form id="formAddService" onsubmit="event.preventDefault(); handleSaveService(event); return false;">
         <div class="form-group">
           <label class="form-label">Nombre del Corte:</label>
           <input type="text" id="serviceName" class="form-input" placeholder="Ej: Corte Infantil o Platinado" required>
@@ -588,25 +588,25 @@
         <div class="image-presets-container">
           <label class="image-preset-label">📷 Selecciona una foto para el corte:</label>
           <div class="image-presets-grid" id="servicePresetsGrid">
-            <div class="image-preset-card active" onclick="selectServicePreset('https://images.unsplash.com/photo-1622286342621-4bd786c2447c?w=400&q=80', this)">
-              <img src="https://images.unsplash.com/photo-1622286342621-4bd786c2447c?w=400&q=80" alt="Fade / Degradé" loading="lazy">
+            <div class="image-preset-card active" onclick="selectServicePreset('https://images.unsplash.com/photo-1622286342621-4bd786c2447c?w=500&q=80', this)">
+              <img src="https://images.unsplash.com/photo-1622286342621-4bd786c2447c?w=500&q=80" alt="Fade / Degradé" loading="lazy">
               <div class="image-preset-title">Fade / Degradé</div>
             </div>
-            <div class="image-preset-card" onclick="selectServicePreset('https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=400&q=80', this)">
-              <img src="https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=400&q=80" alt="Barba / Perfilado" loading="lazy">
+            <div class="image-preset-card" onclick="selectServicePreset('https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=500&q=80', this)">
+              <img src="https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=500&q=80" alt="Barba / Perfilado" loading="lazy">
               <div class="image-preset-title">Barba / Perfilado</div>
             </div>
-            <div class="image-preset-card" onclick="selectServicePreset('https://images.unsplash.com/photo-1599351431202-1e0f0137899a?w=400&q=80', this)">
-              <img src="https://images.unsplash.com/photo-1599351431202-1e0f0137899a?w=400&q=80" alt="Clásico / Tijera" loading="lazy">
+            <div class="image-preset-card" onclick="selectServicePreset('https://images.unsplash.com/photo-1599351431202-1e0f0137899a?w=500&q=80', this)">
+              <img src="https://images.unsplash.com/photo-1599351431202-1e0f0137899a?w=500&q=80" alt="Clásico / Tijera" loading="lazy">
               <div class="image-preset-title">Clásico / Tijera</div>
             </div>
-            <div class="image-preset-card" onclick="selectServicePreset('https://images.unsplash.com/photo-1585747860715-2ba37e788b70?w=400&q=80', this)">
-              <img src="https://images.unsplash.com/photo-1585747860715-2ba37e788b70?w=400&q=80" alt="Combo Corte + Barba" loading="lazy">
+            <div class="image-preset-card" onclick="selectServicePreset('https://images.unsplash.com/photo-1585747860715-2ba37e788b70?w=500&q=80', this)">
+              <img src="https://images.unsplash.com/photo-1585747860715-2ba37e788b70?w=500&q=80" alt="Combo Corte + Barba" loading="lazy">
               <div class="image-preset-title">Combo Corte + Barba</div>
             </div>
           </div>
           <label class="form-label" style="font-size: 11px; margin-top: 6px;">O pega el enlace de tu propia foto (opcional):</label>
-          <input type="url" id="serviceImage" class="form-input" placeholder="https://..." value="https://images.unsplash.com/photo-1622286342621-4bd786c2447c?w=400&q=80" oninput="onCustomServicePhotoInput()">
+          <input type="url" id="serviceImage" class="form-input" placeholder="https://..." value="https://images.unsplash.com/photo-1599351431202-1e0f0137899a?w=500&q=80" oninput="onCustomServicePhotoInput()">
         </div>
 
         <div class="form-group" style="display: flex; align-items: center; gap: 8px; margin-top: 10px; background: rgba(0, 255, 136, 0.08); padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border-gold);">
@@ -979,8 +979,8 @@
       updateShopFluorColor(shop.id, colorHex);
     }
 
-    const DEFAULT_SERVICE_PHOTO = 'https://images.unsplash.com/photo-1622286342621-4bd786c2447c?w=400&q=80';
-    const DEFAULT_PRODUCT_PHOTO = 'https://images.unsplash.com/photo-1597854710119-a5a84399e937?w=400&q=80';
+    const DEFAULT_SERVICE_PHOTO = 'https://images.unsplash.com/photo-1599351431202-1e0f0137899a?w=500&q=80';
+    const DEFAULT_PRODUCT_PHOTO = 'https://images.unsplash.com/photo-1597854710119-a5a84399e937?w=500&q=80';
 
     function getAdminCurrentSlug() {
       const urlParams = new URLSearchParams(window.location.search);
@@ -1256,8 +1256,9 @@
       let totalGross = 0;
       let totalBarbers = 0;
 
+      const fechaLiquidacion = new Date().toLocaleDateString('es-UY', { month: 'long', year: 'numeric' }).toUpperCase();
       document.getElementById('liqShopName').innerText = shop.name;
-      document.getElementById('liqShopDate').innerText = `Liquidación emitida el ${new Date().toLocaleDateString('es-UY')}`;
+      document.getElementById('liqShopDate').innerText = `LIQUIDACIÓN CORRESPONDIENTE A: ${fechaLiquidacion} (Emitida el ${new Date().toLocaleDateString('es-UY')})`;
 
       const tableEl = document.getElementById('liqBarbersTable');
       tableEl.innerHTML = (shop.barbers || []).map(b => {
@@ -1378,8 +1379,10 @@
       reader.readAsDataURL(file);
     }
 
-    function handleSaveCustomization(e) {
-      e.preventDefault();
+    async function handleSaveCustomization(e) {
+      if (e && e.preventDefault) e.preventDefault();
+      const currentSlug = getAdminCurrentSlug();
+      const phoneVal = document.getElementById('custPhone').value.trim();
       const data = {
         name: document.getElementById('custName').value.trim(),
         subtitle: document.getElementById('custSubtitle').value.trim(),
@@ -1387,11 +1390,26 @@
         heroHighlight: document.getElementById('custHeroHighlight').value.trim(),
         tagline: document.getElementById('custTagline').value.trim(),
         address: document.getElementById('custAddress').value.trim(),
-        phone: document.getElementById('custPhone').value.trim(),
+        phone: phoneVal,
         bgImage: currentBgImage,
         brandColor: selectedBrandColor
       };
       updateShopCustomization(shop.id, data);
+
+      if (typeof supabase !== 'undefined' && supabase && supabase.from) {
+        try {
+          await supabase.from('shops').update({ 
+            name: data.name,
+            subtitle: data.subtitle,
+            address: data.address,
+            phone: data.phone,
+            brand_color: data.brandColor
+          }).eq('slug', currentSlug);
+        } catch (err) {
+          console.warn("Fallo sync personalización Supabase:", err);
+        }
+      }
+
       renderAdminDashboard();
       alert('¡Estilo, color flúor, textos, teléfono y foto de fondo guardados con éxito!');
     }
@@ -1457,15 +1475,25 @@
       alert(`¡Preferencia de Notificación guardada!\nAhora el cliente enviará las reservas a: ${labels[val] || val}`);
     }
 
-    function saveOwnerNotificationPhone() {
+    async function saveOwnerNotificationPhone() {
       const phone = document.getElementById('notifOwnerPhone').value.trim();
       if (!phone) {
         alert('Por favor escribe un número de WhatsApp válido.');
         return;
       }
+      const currentSlug = getAdminCurrentSlug();
       shop.phone = phone;
       updateNotificationSettings(shop.id, null, phone);
-      document.getElementById('custPhone').value = phone;
+      if (document.getElementById('custPhone')) document.getElementById('custPhone').value = phone;
+
+      if (typeof supabase !== 'undefined' && supabase && supabase.from) {
+        try {
+          await supabase.from('shops').update({ phone: phone }).eq('slug', currentSlug);
+        } catch (err) {
+          console.warn("Fallo sync teléfono Supabase:", err);
+        }
+      }
+
       alert(`¡Número de WhatsApp del Dueño actualizado a: ${phone}!`);
     }
 
@@ -1817,6 +1845,24 @@
     }
 
     window.onload = async function() {
+      // Garantizar intercepción submit para evitar cualquier recarga
+      const fProd = document.getElementById('formAddProduct');
+      if (fProd) {
+        fProd.addEventListener('submit', function(e) {
+          e.preventDefault();
+          handleSaveProduct(e);
+          return false;
+        });
+      }
+      const fServ = document.getElementById('formAddService');
+      if (fServ) {
+        fServ.addEventListener('submit', function(e) {
+          e.preventDefault();
+          handleSaveService(e);
+          return false;
+        });
+      }
+
       renderAdminDashboard();
       // Sincronizar desde la nube Supabase al abrir
       if (typeof syncFromSupabase === 'function') {
