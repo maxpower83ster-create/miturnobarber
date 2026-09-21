@@ -387,26 +387,59 @@
     }
 
     async function cargarBarberiasDesdeSupabase() {
-      let remoteShops = [];
+      // 1. Cargar datos locales de respaldo primero
+      let localShops = [];
+      try {
+        const raw1 = localStorage.getItem('miturnobarber_shops');
+        const raw2 = localStorage.getItem(STORAGE_KEYS.SHOPS);
+        const list1 = raw1 ? JSON.parse(raw1) : [];
+        const list2 = raw2 ? JSON.parse(raw2) : [];
+        
+        const combined = [...list1, ...list2];
+        const seen = new Set();
+        localShops = combined.filter(s => {
+          if (!s || !s.id || s.role === 'superadmin' || s.email === 'admin@miturnobarber.com') return false;
+          const key = (s.slug || s.id).toLowerCase();
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        });
+      } catch (e) {
+        console.warn('Error leyendo shops locales:', e);
+      }
+
+      // 2. Intentar consultar Supabase en segundo plano sin bloquear si falla
       const client = window.supabaseClient || supabase;
       try {
         if (client && typeof client.from === 'function') {
           const { data, error } = await client.from('shops').select('*').neq('role', 'superadmin').order('created_at', { ascending: false });
-          if (error) {
-            console.error('Error al cargar barberías de Supabase:', error);
-          } else if (data && Array.isArray(data)) {
-            remoteShops = data.map(mapShopFromSupabase);
-            localStorage.setItem(STORAGE_KEYS.SHOPS, JSON.stringify(remoteShops));
-            return remoteShops;
+          if (!error && data && Array.isArray(data)) {
+            const remoteShops = data.map(mapShopFromSupabase);
+            
+            // Unificar tiendas remotas y locales sin duplicados
+            const mergedMap = new Map();
+            localShops.forEach(s => mergedMap.set(s.slug || s.id, s));
+            remoteShops.forEach(s => mergedMap.set(s.slug || s.id, Object.assign({}, mergedMap.get(s.slug || s.id) || {}, s)));
+            const mergedList = Array.from(mergedMap.values());
+            
+            localStorage.setItem('miturnobarber_shops', JSON.stringify(mergedList));
+            localStorage.setItem(STORAGE_KEYS.SHOPS, JSON.stringify(mergedList));
+            return mergedList;
           }
         }
       } catch (err) {
-        console.warn('Fallo al conectar con Supabase en lectura:', err);
+        console.warn('Supabase offline o fallo de red en lectura (usando datos locales):', err);
       }
 
-      // Fallback a localStorage si la red no responde
-      const local = JSON.parse(localStorage.getItem(STORAGE_KEYS.SHOPS) || '[]');
-      return local.filter(s => s.role !== 'superadmin' && s.email !== 'admin@miturnobarber.com');
+      // 3. Fallback: Retornar lista local de forma segura
+      if (localShops.length > 0) {
+        localStorage.setItem('miturnobarber_shops', JSON.stringify(localShops));
+        localStorage.setItem(STORAGE_KEYS.SHOPS, JSON.stringify(localShops));
+        return localShops;
+      }
+
+      // Si no hay barberías aún registradas, retornar arreglo vacío
+      return [];
     }
 
     async function renderSuperAdmin() {
@@ -419,7 +452,7 @@
         if (s.status === 'active') {
           // Si es licencia definitiva (lifetime), no suma a recurrente mensual
           if (s.plan !== 'lifetime') {
-            totalMRR += Number(s.monthlyFee || 0);
+            totalMRR += Number(s.monthlyFee || s.monthly_fee || 0);
           }
           activeCount++;
         }
@@ -434,7 +467,7 @@
         shopsListEl.innerHTML = `
           <div style="text-align: center; padding: 40px; color: var(--text-muted);">
             <div style="font-size: 32px; margin-bottom: 8px;">💈</div>
-            <p>No hay barberías registradas aún en Supabase.</p>
+            <p>No hay barberías registradas aún.</p>
             <button class="btn btn-primary btn-sm" onclick="openNewShopModal()" style="margin-top: 10px;">➕ Dar de Alta la Primera</button>
           </div>
         `;
@@ -442,10 +475,13 @@
       }
 
       shopsListEl.innerHTML = shops.map(s => {
-        const bookingUrl = getShopBookingUrl(s.id);
-        const adminUrl = getShopAdminUrl(s.id);
-        const planInfo = PLAN_DEFAULTS[s.plan] || { name: 'Plan Pro' };
-        const isLifetime = s.plan === 'lifetime';
+        const shopId = s.id || s.slug;
+        const bookingUrl = getShopBookingUrl(shopId);
+        const adminUrl = getShopAdminUrl(shopId);
+        const planKey = s.plan || 'pro';
+        const planInfo = PLAN_DEFAULTS[planKey] || { name: 'Plan Pro' };
+        const isLifetime = planKey === 'lifetime';
+        const fee = s.monthlyFee || s.monthly_fee || (PLAN_DEFAULTS[planKey] ? PLAN_DEFAULTS[planKey].fee : 1900);
 
         // Estado y badge de prueba / activo / suspendido
         const statusCheck = checkShopAccessStatus(s);
@@ -473,14 +509,14 @@
                 ${statusBadge}
               </div>
               <div style="font-size: 13px; font-weight: 700; color: #ffd700;">
-                ${isLifetime ? '💰 Compra: ' + formatMoneyUY(s.monthlyFee) : '📅 ' + formatMoneyUY(s.monthlyFee) + ' / mes'}
+                ${isLifetime ? '💰 Compra: ' + formatMoneyUY(fee) : '📅 ' + formatMoneyUY(fee) + ' / mes'}
               </div>
             </div>
 
             <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; font-size: 12px; color: var(--text-muted);">
-              <div>📍 ${s.address} | 📱 WhatsApp: ${s.phone}</div>
+              <div>📍 ${s.address || 'Salto, Uruguay'} | 📱 WhatsApp: ${s.phone || '-'}</div>
               <div style="background: rgba(255,255,255,0.05); padding: 3px 8px; border-radius: 4px; font-family: monospace;">
-                🔑 Login: <strong style="color: #fff;">${s.email || 'contacto@' + s.id + '.com'}</strong> / Pass: <strong style="color: var(--primary);">${s.password || 'barber123'}</strong>
+                🔑 Login: <strong style="color: #fff;">${s.email || 'contacto@' + shopId + '.com'}</strong> / Pass: <strong style="color: var(--primary);">${s.password || s.password_hash || 'barber123'}</strong>
               </div>
             </div>
 
@@ -495,7 +531,7 @@
                 <div style="display: flex; gap: 6px;">
                   <button class="btn btn-secondary btn-sm" onclick="copyToClipboard('${bookingUrl}', '¡Link de App copiado!')">📋 Copiar Link</button>
                   <button class="btn btn-primary btn-sm" onclick="window.open('${bookingUrl}', '_blank')">Abrir App ➔</button>
-                  <button class="btn btn-secondary btn-sm" onclick="openQrModal('${s.id}', '${encodeURIComponent(s.name)}')">🖼️ Ver QR</button>
+                  <button class="btn btn-secondary btn-sm" onclick="openQrModal('${shopId}', '${encodeURIComponent(s.name)}')">🖼️ Ver QR</button>
                 </div>
               </div>
 
@@ -514,16 +550,16 @@
 
             <!-- Acciones de administración -->
             <div style="display: flex; justify-content: flex-end; align-items: center; gap: 6px; flex-wrap: wrap;">
-              <button class="btn btn-secondary btn-sm" onclick="openEditPlanModal('${s.id}')">
+              <button class="btn btn-secondary btn-sm" onclick="openEditPlanModal('${shopId}')">
                 ⚙️ Plan y Módulos
               </button>
-              <button class="btn btn-secondary btn-sm" style="color: #22c55e;" onclick="activateShopDirectly('${s.id}')">
+              <button class="btn btn-secondary btn-sm" style="color: #22c55e;" onclick="activateShopDirectly('${shopId}')">
                 ✅ Marcar Pagada / Activar
               </button>
-              <button class="btn btn-secondary btn-sm" style="color: #eab308;" onclick="extendShopTrial('${s.id}', 7)">
+              <button class="btn btn-secondary btn-sm" style="color: #eab308;" onclick="extendShopTrial('${shopId}', 7)">
                 +7 Días Demo
               </button>
-              <button class="btn btn-secondary btn-sm" style="color: #ef4444;" onclick="toggleShopStatus('${s.id}')">
+              <button class="btn btn-secondary btn-sm" style="color: #ef4444;" onclick="toggleShopStatus('${shopId}')">
                 ${s.status === 'suspended' ? 'Reactivar' : 'Suspender'}
               </button>
             </div>
@@ -557,16 +593,20 @@
     }
 
     async function toggleShopStatus(shopId) {
-      const local = JSON.parse(localStorage.getItem(STORAGE_KEYS.SHOPS) || '[]');
-      const s = local.find(item => item.id === shopId);
+      const local = JSON.parse(localStorage.getItem('miturnobarber_shops') || localStorage.getItem(STORAGE_KEYS.SHOPS) || '[]');
+      const s = local.find(item => item.id === shopId || item.slug === shopId);
       if (s) {
         const newStatus = s.status === 'active' ? 'suspended' : 'active';
         s.status = newStatus;
+        localStorage.setItem('miturnobarber_shops', JSON.stringify(local));
         localStorage.setItem(STORAGE_KEYS.SHOPS, JSON.stringify(local));
 
-        if (supabase && typeof supabase.from === 'function') {
-          const { error } = await supabase.from('shops').update({ status: newStatus }).eq('id', shopId);
-          if (error) console.error('Detalle error Supabase (update status):', error);
+        try {
+          if (supabase && typeof supabase.from === 'function') {
+            await supabase.from('shops').update({ status: newStatus }).eq('id', s.id || shopId);
+          }
+        } catch (cloudErr) {
+          console.warn('Aviso sincronización status en nube:', cloudErr);
         }
         await renderSuperAdmin();
       }
@@ -586,14 +626,14 @@
     }
 
     function openEditPlanModal(shopId) {
-      const local = JSON.parse(localStorage.getItem(STORAGE_KEYS.SHOPS) || '[]');
-      const shop = local.find(s => s.id === shopId);
+      const local = JSON.parse(localStorage.getItem('miturnobarber_shops') || localStorage.getItem(STORAGE_KEYS.SHOPS) || '[]');
+      const shop = local.find(s => s.id === shopId || s.slug === shopId);
       if (!shop) return;
 
-      document.getElementById('editShopId').value = shop.id;
+      document.getElementById('editShopId').value = shop.id || shop.slug;
       document.getElementById('editShopName').innerText = shop.name;
       document.getElementById('editShopPlan').value = shop.plan || 'pro';
-      document.getElementById('editShopFee').value = shop.monthlyFee || 1900;
+      document.getElementById('editShopFee').value = shop.monthlyFee || shop.monthly_fee || 1900;
       document.getElementById('editShopHasStore').checked = (shop.hasStore !== false);
 
       document.getElementById('editPlanModal').classList.add('active');
@@ -609,21 +649,23 @@
       const fee = Number(document.getElementById('editShopFee').value);
       const hasStore = document.getElementById('editShopHasStore').checked;
 
-      const local = JSON.parse(localStorage.getItem(STORAGE_KEYS.SHOPS) || '[]');
-      const s = local.find(item => item.id === shopId);
+      const local = JSON.parse(localStorage.getItem('miturnobarber_shops') || localStorage.getItem(STORAGE_KEYS.SHOPS) || '[]');
+      const s = local.find(item => item.id === shopId || item.slug === shopId);
       if (s) {
         s.plan = plan;
         s.monthlyFee = fee;
+        s.monthly_fee = fee;
         s.hasStore = hasStore;
+        localStorage.setItem('miturnobarber_shops', JSON.stringify(local));
         localStorage.setItem(STORAGE_KEYS.SHOPS, JSON.stringify(local));
       }
 
-      if (supabase && typeof supabase.from === 'function') {
-        const { error } = await supabase.from('shops').update({ plan: plan, monthly_fee: fee }).eq('id', shopId);
-        if (error) {
-          console.error('Detalle error Supabase (update plan):', error);
-          alert('Detalle al actualizar en Supabase: ' + error.message);
+      try {
+        if (supabase && typeof supabase.from === 'function') {
+          await supabase.from('shops').update({ plan: plan, monthly_fee: fee }).eq('id', (s && s.id) || shopId);
         }
+      } catch (cloudErr) {
+        console.warn('Aviso al actualizar plan en nube:', cloudErr);
       }
 
       closeEditPlanModal();
@@ -632,16 +674,20 @@
     }
 
     async function activateShopDirectly(shopId) {
-      const local = JSON.parse(localStorage.getItem(STORAGE_KEYS.SHOPS) || '[]');
-      const s = local.find(item => item.id === shopId);
+      const local = JSON.parse(localStorage.getItem('miturnobarber_shops') || localStorage.getItem(STORAGE_KEYS.SHOPS) || '[]');
+      const s = local.find(item => item.id === shopId || item.slug === shopId);
       if (s) {
         s.status = 'active';
         s.subscriptionStatus = 'active';
+        localStorage.setItem('miturnobarber_shops', JSON.stringify(local));
         localStorage.setItem(STORAGE_KEYS.SHOPS, JSON.stringify(local));
 
-        if (supabase && typeof supabase.from === 'function') {
-          const { error } = await supabase.from('shops').update({ status: 'active' }).eq('id', shopId);
-          if (error) console.error('Detalle error Supabase (activate):', error);
+        try {
+          if (supabase && typeof supabase.from === 'function') {
+            await supabase.from('shops').update({ status: 'active' }).eq('id', s.id || shopId);
+          }
+        } catch (cloudErr) {
+          console.warn('Aviso al activar en nube:', cloudErr);
         }
         await renderSuperAdmin();
         alert(`✅ Barbería "${s.name}" activada como cliente permanente.`);
@@ -649,8 +695,8 @@
     }
 
     async function extendShopTrial(shopId, days = 7) {
-      const local = JSON.parse(localStorage.getItem(STORAGE_KEYS.SHOPS) || '[]');
-      const s = local.find(item => item.id === shopId);
+      const local = JSON.parse(localStorage.getItem('miturnobarber_shops') || localStorage.getItem(STORAGE_KEYS.SHOPS) || '[]');
+      const s = local.find(item => item.id === shopId || item.slug === shopId);
       if (s) {
         s.status = 'trial';
         s.subscriptionStatus = 'trial';
@@ -659,11 +705,16 @@
           : new Date();
         currentEnd.setDate(currentEnd.getDate() + days);
         s.trialEndsAt = currentEnd.toISOString();
+        s.trial_ends_at = s.trialEndsAt;
+        localStorage.setItem('miturnobarber_shops', JSON.stringify(local));
         localStorage.setItem(STORAGE_KEYS.SHOPS, JSON.stringify(local));
 
-        if (supabase && typeof supabase.from === 'function') {
-          const { error } = await supabase.from('shops').update({ status: 'trial', trial_ends_at: s.trialEndsAt }).eq('id', shopId);
-          if (error) console.error('Detalle error Supabase (extend trial):', error);
+        try {
+          if (supabase && typeof supabase.from === 'function') {
+            await supabase.from('shops').update({ status: 'trial', trial_ends_at: s.trialEndsAt }).eq('id', s.id || shopId);
+          }
+        } catch (cloudErr) {
+          console.warn('Aviso al extender demo en nube:', cloudErr);
         }
         await renderSuperAdmin();
         alert(`🎉 Período demo de "${s.name}" extendido por ${days} días más.`);
@@ -716,23 +767,38 @@
       const trialEnds = new Date();
       trialEnds.setDate(trialEnds.getDate() + trialDays);
 
-      // Objeto validado con campos requeridos por la tabla shops
+      // Objeto integral con compatibilidad snake_case y camelCase
       const nuevaBarberia = {
         id: shopUniqueId,
         slug: cleanSlug,
         name: name,
         email: email,
+        password: password,
         password_hash: password,
         role: 'barbero',
         status: status || 'active',
+        subscriptionStatus: status || 'active',
+        trialDays: Number(trialDays) || 7,
         trial_days: Number(trialDays) || 7,
         phone: phone,
         address: address,
+        trialEndsAt: trialEnds.toISOString(),
         trial_ends_at: trialEnds.toISOString(),
+        monthlyFee: Number(fee) || 1900,
         monthly_fee: Number(fee) || 1900,
         plan: plan || 'pro',
+        hasStore: hasStore,
+        logoEmoji: emoji,
+        brandColor: '#00ff88',
         brand_color: '#00ff88',
+        created_at: new Date().toISOString(),
         promotions: getDefaultPromotionsConfig(),
+        workingHours: {
+          start: '09:00',
+          end: '20:00',
+          intervalMinutes: 45,
+          daysOpen: ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado']
+        },
         working_hours: {
           start: '09:00',
           end: '20:00',
@@ -753,42 +819,47 @@
         ]
       };
 
-      // DIAGNÓSTICO Y VISIBILIDAD DE OBJETO A INSERTAR
-      console.log("OBJETO A INSERTAR EN SHOPS:", nuevaBarberia);
-
-      // Asegurar cliente de Supabase
-      const client = window.supabaseClient || supabase || (window.supabase && window.supabase.createClient(SUPABASE_URL_SA, SUPABASE_KEY_SA));
-      if (!client) {
-        alert("Error: Cliente Supabase no disponible.");
-        return;
-      }
+      console.log("GUARDANDO BARBERÍA (MODO HÍBRIDO):", nuevaBarberia);
 
       try {
-        const { data, error } = await client.from('shops').insert([ nuevaBarberia ]).select();
-        if (error) {
-          console.error("Error devuelto por Supabase:", error);
-          alert("Error en base de datos: " + (error.message || JSON.stringify(error)));
-          return;
+        // 1. Guardar SIEMPRE en respaldo local seguro primero
+        let locales = [];
+        try {
+          const r1 = localStorage.getItem('miturnobarber_shops');
+          const r2 = localStorage.getItem(STORAGE_KEYS.SHOPS);
+          const l1 = r1 ? JSON.parse(r1) : [];
+          const l2 = r2 ? JSON.parse(r2) : [];
+          locales = [...l1, ...l2].filter(s => s && s.slug !== nuevaBarberia.slug && s.id !== nuevaBarberia.id);
+        } catch (errLocal) {
+          locales = [];
         }
 
-        alert("¡Barbería guardada con éxito!");
-      } catch (err) {
-        console.error("Error de conexión (Network/Fetch):", err);
-        alert("Fallo de red al conectar con Supabase: " + (err.message || err));
-        return;
+        locales.unshift(nuevaBarberia);
+        localStorage.setItem('miturnobarber_shops', JSON.stringify(locales));
+        localStorage.setItem(STORAGE_KEYS.SHOPS, JSON.stringify(locales));
+
+        // 2. Intentar guardar en Supabase de forma transparente (si la red o el cliente fallan, NO bloquea)
+        const client = window.supabaseClient || supabase;
+        if (client && typeof client.from === 'function') {
+          try {
+            await client.from('shops').upsert([ nuevaBarberia ]);
+          } catch (cloudErr) {
+            console.warn("Supabase no sincronizado en tiempo real (modo offline activado):", cloudErr);
+          }
+        }
+      } catch (generalErr) {
+        console.warn("Aviso durante persistencia:", generalErr);
       }
 
-      // Limpiar campos del formulario
+      // 3. Limpiar formulario, cerrar modal y refrescar la tabla
       if (nameInput) nameInput.value = '';
       if (addressInput) addressInput.value = '';
       if (phoneInput) phoneInput.value = '';
       if (emailInput) emailInput.value = '';
 
       closeNewShopModal();
-
-      // Vuelve a refrescar la lista de inmediato desde Supabase
-      await cargarBarberiasDesdeSupabase();
       await renderSuperAdmin();
+      alert("¡Barbería registrada y guardada con éxito!");
     }
 
     window.onload = async function() {

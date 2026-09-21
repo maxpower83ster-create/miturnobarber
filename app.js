@@ -406,18 +406,39 @@ function initDB() {
 
 function getShops() {
   initDB();
-  const shops = JSON.parse(localStorage.getItem(STORAGE_KEYS.SHOPS) || '[]');
+  let shops = [];
+  try {
+    const raw1 = localStorage.getItem(STORAGE_KEYS.SHOPS);
+    const raw2 = localStorage.getItem('miturnobarber_shops');
+    const list1 = raw1 ? JSON.parse(raw1) : [];
+    const list2 = raw2 ? JSON.parse(raw2) : [];
+    const combined = [...list1, ...list2];
+    const seen = new Set();
+    shops = combined.filter(s => {
+      if (!s || !s.id) return false;
+      const key = (s.slug || s.id).toLowerCase();
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  } catch (e) {
+    shops = [];
+  }
+
   const list = shops.length > 0 ? shops : DEFAULT_SHOPS;
 
   // Compatibilidad hacia atrás: asegurar promociones, email, password, status y trial
   list.forEach(shop => {
     if (!shop.slug) shop.slug = shop.id;
     if (!shop.email) shop.email = `contacto@${shop.slug || 'barberia'}.com`;
+    if (!shop.password && shop.password_hash) shop.password = shop.password_hash;
     if (!shop.password) shop.password = 'barber123';
+    if (!shop.password_hash) shop.password_hash = shop.password;
     if (!shop.status) shop.status = 'active';
-    if (!shop.trialDays) shop.trialDays = 14;
+    if (!shop.trialDays) shop.trialDays = Number(shop.trial_days) || 14;
+    if (!shop.monthlyFee && shop.monthly_fee) shop.monthlyFee = Number(shop.monthly_fee);
     if (!shop.trialEndsAt) {
-      shop.trialEndsAt = new Date(Date.now() + (shop.trialDays || 14) * 24 * 60 * 60 * 1000).toISOString();
+      shop.trialEndsAt = shop.trial_ends_at || new Date(Date.now() + (shop.trialDays || 14) * 24 * 60 * 60 * 1000).toISOString();
     }
     if (!shop.notificationPreference) shop.notificationPreference = 'both';
     if (!shop.phone) shop.phone = '59899123456';
@@ -461,6 +482,7 @@ function getShops() {
 
 function saveShops(shops) {
   localStorage.setItem(STORAGE_KEYS.SHOPS, JSON.stringify(shops));
+  localStorage.setItem('miturnobarber_shops', JSON.stringify(shops));
   // Sincronización transparente con Supabase
   try {
     for (const s of shops) {
@@ -597,7 +619,7 @@ async function authenticateUser(email, password) {
     (s.id || '').toLowerCase().trim() === cleanEmail
   );
 
-  if (shop && shop.password === cleanPass) {
+  if (shop && (shop.password === cleanPass || shop.password_hash === cleanPass)) {
     if (shop.role === 'superadmin') {
       const session = {
         role: 'superadmin',
