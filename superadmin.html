@@ -288,10 +288,13 @@
 
   <script src="app.js"></script>
   <script>
-    // Inicialización explícita del cliente oficial de Supabase
+    // Configuración y cliente oficial de Supabase
     const SUPABASE_URL_SA = 'https://tgxdllqnsspohfubqps.supabase.co';
     const SUPABASE_KEY_SA = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRneGRsbHFuc3Nwb2hmdWJxcHMiLCJyb2xlIjoiYW5vbiIsImlhdCI6MTc2MDk5MTYwMSwiZXhwIjoyMDc2NTY3NjAxfQ.sB-B-aLTY8uRt5PT6fHEJeI71VbCyy3oB_cYh15m4';
-    
+
+    console.log("Supabase URL configurada:", SUPABASE_URL_SA ? "OK" : "FALTA");
+    console.log("Supabase Anon Key configurada:", SUPABASE_KEY_SA ? "OK" : "FALTA");
+
     if (window.supabase && typeof window.supabase.createClient === 'function') {
       window.supabaseClient = window.supabase.createClient(SUPABASE_URL_SA, SUPABASE_KEY_SA);
       supabase = window.supabaseClient;
@@ -754,27 +757,26 @@
       console.log("OBJETO A INSERTAR EN SHOPS:", nuevaBarberia);
 
       // Asegurar cliente de Supabase
-      const client = window.supabaseClient || supabase;
+      const client = window.supabaseClient || supabase || (window.supabase && window.supabase.createClient(SUPABASE_URL_SA, SUPABASE_KEY_SA));
       if (!client) {
         alert("Error: Cliente Supabase no disponible.");
         return;
       }
 
-      let insertError = null;
       try {
         const { data, error } = await client.from('shops').insert([ nuevaBarberia ]).select();
-        insertError = error;
-      } catch (err) {
-        insertError = err;
-      }
+        if (error) {
+          console.error("Error devuelto por Supabase:", error);
+          alert("Error en base de datos: " + (error.message || JSON.stringify(error)));
+          return;
+        }
 
-      if (insertError) {
-        console.error("ERROR EXACTO SUPABASE:", insertError);
-        alert("Error de Supabase al guardar: " + (insertError.message || JSON.stringify(insertError)));
+        alert("¡Barbería guardada con éxito!");
+      } catch (err) {
+        console.error("Error de conexión (Network/Fetch):", err);
+        alert("Fallo de red al conectar con Supabase: " + (err.message || err));
         return;
       }
-
-      alert("Barbería creada con éxito en la base de datos.");
 
       // Limpiar campos del formulario
       if (nameInput) nameInput.value = '';
