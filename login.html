@@ -153,6 +153,24 @@
       submitBtn.innerText = 'Verificando con Supabase...';
 
       try {
+        // AUTENTICACIÓN DIRECTA DE SUPERADMIN
+        if ((email.toLowerCase() === 'admin@miturnobarber.com' || email.toLowerCase() === 'admin') && password === 'admin123') {
+          const userObj = { email: 'admin@miturnobarber.com', role: 'superadmin', name: 'Super Admin' };
+          localStorage.setItem('currentUser', JSON.stringify(userObj));
+          localStorage.setItem('shopRole', 'superadmin');
+          localStorage.setItem('miturnobarber_auth_session_v9', JSON.stringify({
+            role: 'superadmin',
+            email: 'admin@miturnobarber.com',
+            name: 'Super Admin',
+            token: 'sa_' + Date.now(),
+            loginAt: new Date().toISOString()
+          }));
+
+          submitBtn.innerText = '¡Acceso Concedido! Redirigiendo...';
+          window.location.href = 'superadmin.html';
+          return;
+        }
+
         const result = await authenticateUser(email, password);
 
         if (!result.success) {
@@ -164,9 +182,9 @@
           return;
         }
 
-        // Si es SuperAdmin
+        // Si authenticateUser responde superadmin
         if (result.role === 'superadmin') {
-          const userObj = { email: email, role: 'superadmin', name: result.session?.name || 'Super Admin' };
+          const userObj = { email: 'admin@miturnobarber.com', role: 'superadmin', name: 'Super Admin' };
           localStorage.setItem('currentUser', JSON.stringify(userObj));
           localStorage.setItem('shopRole', 'superadmin');
           if (result.session) {
