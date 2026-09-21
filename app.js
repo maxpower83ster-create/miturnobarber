@@ -513,17 +513,17 @@ async function authenticateUser(email, password) {
     return { success: false, message: 'Por favor completa todos los campos.' };
   }
 
-  // 1. Verificación instantánea de cuenta maestra SuperAdmin (independiente de si Supabase está activo o pausado)
-  if (cleanEmail === SUPERADMIN_ACCOUNT.email && cleanPass === SUPERADMIN_ACCOUNT.password) {
+  // 1. Verificación instantánea de cuenta maestra SuperAdmin (admite email 'admin@miturnobarber.com' o usuario 'admin')
+  if ((cleanEmail === SUPERADMIN_ACCOUNT.email || cleanEmail === 'admin') && cleanPass === SUPERADMIN_ACCOUNT.password) {
     const session = {
       role: 'superadmin',
-      email: cleanEmail,
+      email: SUPERADMIN_ACCOUNT.email,
       name: SUPERADMIN_ACCOUNT.name,
       token: 'sa_' + Date.now(),
       loginAt: new Date().toISOString()
     };
     localStorage.setItem(STORAGE_KEYS.AUTH_SESSION, JSON.stringify(session));
-    localStorage.setItem('currentUser', JSON.stringify({ email: cleanEmail, role: 'superadmin', name: SUPERADMIN_ACCOUNT.name }));
+    localStorage.setItem('currentUser', JSON.stringify({ email: SUPERADMIN_ACCOUNT.email, role: 'superadmin', name: SUPERADMIN_ACCOUNT.name }));
     localStorage.setItem('shopRole', 'superadmin');
     return { success: true, role: 'superadmin', session };
   }
@@ -589,9 +589,13 @@ async function authenticateUser(email, password) {
     console.warn('Aviso de consulta a Supabase en login:', err);
   }
 
-  // 3. Fallback de barberías locales en caché
+  // 3. Fallback de barberías locales en caché (permite email o slug/usuario)
   const shops = getShops();
-  const shop = shops.find(s => (s.email || '').toLowerCase().trim() === cleanEmail);
+  const shop = shops.find(s => 
+    (s.email || '').toLowerCase().trim() === cleanEmail || 
+    (s.slug || '').toLowerCase().trim() === cleanEmail || 
+    (s.id || '').toLowerCase().trim() === cleanEmail
+  );
 
   if (shop && shop.password === cleanPass) {
     if (shop.role === 'superadmin') {
@@ -638,12 +642,17 @@ function getCurrentSession() {
     const role = localStorage.getItem('shopRole');
     if (userRaw) {
       const u = JSON.parse(userRaw);
+      const userRole = role || u.role || 'barbero';
       return {
-        role: role || u.role || 'barbero',
+        role: userRole,
         shop_id: u.shopId || u.shop_id,
         slug: u.slug || u.shopId,
-        email: u.email
+        email: u.email,
+        name: u.name || (userRole === 'superadmin' ? 'Super Admin' : 'Barbero')
       };
+    }
+    if (role === 'superadmin') {
+      return { role: 'superadmin', name: 'Super Admin', email: 'admin@miturnobarber.com' };
     }
     return null;
   } catch (e) {
