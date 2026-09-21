@@ -203,7 +203,17 @@
       dateInput.min = today;
 
       // Renderizar Servicios con Promociones Destacadas en primer lugar
-      const sortedServices = [...(currentShop.services || [])].sort((a, b) => (b.isPromo ? 1 : 0) - (a.isPromo ? 1 : 0));
+      const clientSlug = currentShop.slug || currentShop.id || 'casa-brava';
+      let servicesPool = currentShop.services || [];
+      try {
+        const rawServs = localStorage.getItem('services_' + clientSlug);
+        if (rawServs) {
+          const parsedServs = JSON.parse(rawServs);
+          if (Array.isArray(parsedServs) && parsedServs.length > 0) servicesPool = parsedServs;
+        }
+      } catch(e) {}
+
+      const sortedServices = [...servicesPool].sort((a, b) => (b.isPromo ? 1 : 0) - (a.isPromo ? 1 : 0));
       const servicesGrid = document.getElementById('servicesGrid');
       servicesGrid.innerHTML = sortedServices.map((s, idx) => `
         <div class="service-compact-card ${idx === 0 ? 'selected' : ''} ${s.isPromo ? 'is-promo' : ''}" onclick="selectServiceItem('${s.id}')" id="srv-${s.id}">
@@ -215,8 +225,8 @@
           <div class="service-compact-info">
             ${s.isPromo ? '<div class="service-promo-badge">🔥 PROMO DESTACADA</div>' : ''}
             <div class="service-compact-name">${s.name}</div>
-            <div class="service-compact-desc">${s.desc}</div>
-            <div class="service-compact-duration">⏱️ ${s.duration}</div>
+            <div class="service-compact-desc">${s.description || s.desc || ''}</div>
+            <div class="service-compact-duration">⏱️ ${s.duration || '30 min'}</div>
           </div>
           <div class="service-compact-price">${formatMoneyUY(s.price)}</div>
         </div>
@@ -251,7 +261,7 @@
       if (currentShop.hasStore !== false && upsellingEnabled) {
         let productsPool = currentShop.products || [];
         try {
-          const rawProds = localStorage.getItem(`shop_products_${currentShop.slug || currentShop.id}`);
+          const rawProds = localStorage.getItem('products_' + clientSlug) || localStorage.getItem('shop_products_' + clientSlug);
           if (rawProds) {
             const parsedProds = JSON.parse(rawProds);
             if (Array.isArray(parsedProds) && parsedProds.length > 0) productsPool = parsedProds;

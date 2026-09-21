@@ -516,18 +516,18 @@
         <h3 style="font-size: 16px; font-weight: bold; color: #fff;">🛍️ Agregar Producto a la Tienda</h3>
         <button onclick="closeAddProductModal()" style="background: none; border: none; color: var(--text-muted); font-size: 18px; cursor: pointer;">✕</button>
       </div>
-      <form onsubmit="handleCreateProduct(event)">
+      <form onsubmit="handleSaveProduct(event)">
         <div class="form-group">
           <label class="form-label">Nombre del Producto:</label>
-          <input type="text" id="newProdName" class="form-input" placeholder="Ej: Pomada Matte Fijación Extra" required>
+          <input type="text" id="prodName" class="form-input" placeholder="Ej: Pomada Matte Fijación Extra" required>
         </div>
         <div class="form-group">
           <label class="form-label">Precio de Venta ($ UYU):</label>
-          <input type="number" id="newProdPrice" class="form-input" placeholder="Ej: 350" required>
+          <input type="number" id="prodPrice" class="form-input" placeholder="Ej: 350" required>
         </div>
         <div class="form-group">
           <label class="form-label">Descripción breve:</label>
-          <input type="text" id="newProdDesc" class="form-input" placeholder="Ej: Efecto mate sin brillo, fijación 24hs" required>
+          <input type="text" id="prodDesc" class="form-input" placeholder="Ej: Efecto mate sin brillo, fijación 24hs" required>
         </div>
         
         <!-- Selector visual de fotos predefinidas para productos -->
@@ -548,7 +548,7 @@
             </div>
           </div>
           <label class="form-label" style="font-size: 11px; margin-top: 6px;">O pega el enlace de tu propia foto (opcional):</label>
-          <input type="url" id="newProdPhoto" class="form-input" placeholder="https://..." value="https://images.unsplash.com/photo-1597854710119-a5a84399e937?w=400&q=80" oninput="onCustomProductPhotoInput()">
+          <input type="url" id="prodImage" class="form-input" placeholder="https://..." value="https://images.unsplash.com/photo-1597854710119-a5a84399e937?w=400&q=80" oninput="onCustomProductPhotoInput()">
         </div>
 
         <div style="display: flex; gap: 8px; margin-top: 16px;">
@@ -566,22 +566,22 @@
         <h3 style="font-size: 16px; font-weight: bold; color: #fff;">+ Agregar Nuevo Corte / Servicio</h3>
         <button onclick="closeAddServiceModal()" style="background: none; border: none; color: var(--text-muted); font-size: 18px; cursor: pointer;">✕</button>
       </div>
-      <form onsubmit="handleCreateService(event)">
+      <form onsubmit="handleSaveService(event)">
         <div class="form-group">
           <label class="form-label">Nombre del Corte:</label>
-          <input type="text" id="newSrvName" class="form-input" placeholder="Ej: Corte Infantil o Platinado" required>
+          <input type="text" id="serviceName" class="form-input" placeholder="Ej: Corte Infantil o Platinado" required>
         </div>
         <div class="form-group">
           <label class="form-label">Precio en Pesos Uruguayos ($ UYU):</label>
-          <input type="number" id="newSrvPrice" class="form-input" placeholder="Ej: 400" required>
+          <input type="number" id="servicePrice" class="form-input" placeholder="Ej: 400" required>
         </div>
         <div class="form-group">
           <label class="form-label">Duración estimada:</label>
-          <input type="text" id="newSrvDuration" class="form-input" value="30 min" required>
+          <input type="text" id="serviceDuration" class="form-input" value="30 min" required>
         </div>
         <div class="form-group">
           <label class="form-label">Descripción breve:</label>
-          <input type="text" id="newSrvDesc" class="form-input" placeholder="Ej: Corte moderno con peinado" required>
+          <input type="text" id="serviceDesc" class="form-input" placeholder="Ej: Corte moderno con peinado" required>
         </div>
 
         <!-- Selector visual de fotos predefinidas para cortes -->
@@ -606,12 +606,12 @@
             </div>
           </div>
           <label class="form-label" style="font-size: 11px; margin-top: 6px;">O pega el enlace de tu propia foto (opcional):</label>
-          <input type="url" id="newSrvPhoto" class="form-input" placeholder="https://..." value="https://images.unsplash.com/photo-1622286342621-4bd786c2447c?w=400&q=80" oninput="onCustomServicePhotoInput()">
+          <input type="url" id="serviceImage" class="form-input" placeholder="https://..." value="https://images.unsplash.com/photo-1622286342621-4bd786c2447c?w=400&q=80" oninput="onCustomServicePhotoInput()">
         </div>
 
         <div class="form-group" style="display: flex; align-items: center; gap: 8px; margin-top: 10px; background: rgba(0, 255, 136, 0.08); padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border-gold);">
-          <input type="checkbox" id="newSrvIsPromo" style="width: 18px; height: 18px; accent-color: var(--primary);">
-          <label for="newSrvIsPromo" class="form-label" style="margin-bottom: 0; cursor: pointer; color: #fff; font-weight: 700;">
+          <input type="checkbox" id="serviceIsPromo" style="width: 18px; height: 18px; accent-color: var(--primary);">
+          <label for="serviceIsPromo" class="form-label" style="margin-bottom: 0; cursor: pointer; color: #fff; font-weight: 700;">
             ⭐ Marcar como Destacado / Promoción Especial
           </label>
         </div>
@@ -982,15 +982,26 @@
     const DEFAULT_SERVICE_PHOTO = 'https://images.unsplash.com/photo-1622286342621-4bd786c2447c?w=400&q=80';
     const DEFAULT_PRODUCT_PHOTO = 'https://images.unsplash.com/photo-1597854710119-a5a84399e937?w=400&q=80';
 
+    function getAdminCurrentSlug() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const fromUrl = urlParams.get('b') || urlParams.get('shop');
+      if (fromUrl) return fromUrl;
+      if (shop && (shop.slug || shop.id)) return (shop.slug || shop.id);
+      const session = getCurrentSession();
+      if (session && (session.slug || session.shop_id)) return (session.slug || session.shop_id);
+      return 'sebastian-camara';
+    }
+
     function selectServicePreset(url, el) {
       document.querySelectorAll('#servicePresetsGrid .image-preset-card').forEach(c => c.classList.remove('active'));
       if (el) el.classList.add('active');
-      const input = document.getElementById('newSrvPhoto');
+      const input = document.getElementById('serviceImage') || document.getElementById('newSrvPhoto');
       if (input) input.value = url;
     }
 
     function onCustomServicePhotoInput() {
-      const val = (document.getElementById('newSrvPhoto').value || '').trim();
+      const input = document.getElementById('serviceImage') || document.getElementById('newSrvPhoto');
+      const val = (input?.value || '').trim();
       document.querySelectorAll('#servicePresetsGrid .image-preset-card').forEach(card => {
         const img = card.querySelector('img');
         if (img && img.src === val) {
@@ -1001,19 +1012,39 @@
       });
     }
 
-    function renderAdminServicesEditor() {
+    function getShopServicesList(slug) {
+      const currentSlug = slug || getAdminCurrentSlug();
+      try {
+        const raw = localStorage.getItem('services_' + currentSlug);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        }
+      } catch (e) {}
+
+      if (shop && Array.isArray(shop.services) && shop.services.length > 0) {
+        return shop.services;
+      }
+      return (typeof DEFAULT_SHOPS !== 'undefined' && DEFAULT_SHOPS[0]?.services) ? DEFAULT_SHOPS[0].services : [];
+    }
+
+    function renderServices() {
+      const currentSlug = getAdminCurrentSlug();
       const srvList = document.getElementById('adminServicesList');
-      if (!shop.services || shop.services.length === 0) {
+      if (!srvList) return;
+
+      const services = getShopServicesList(currentSlug);
+      if (services.length === 0) {
         srvList.innerHTML = `<div style="text-align: center; color: var(--text-muted); padding: 20px;">No hay cortes agregados. Haz clic en "+ Nuevo Corte".</div>`;
         return;
       }
 
-      srvList.innerHTML = shop.services.map(s => `
+      srvList.innerHTML = services.map(s => `
         <div class="service-edit-row ${s.isPromo ? 'is-promo' : ''}">
           <div class="service-edit-header">
-            <img src="${s.photo || s.image || DEFAULT_SERVICE_PHOTO}" 
+            <img src="${s.image || s.photo || DEFAULT_SERVICE_PHOTO}" 
                  class="service-compact-thumb" 
-                 alt="${s.name}"
+                 alt="${s.name}" 
                  loading="lazy"
                  onerror="this.src='${DEFAULT_SERVICE_PHOTO}'">
             <div style="flex: 1; min-width: 0;">
@@ -1021,8 +1052,8 @@
                 <div style="font-size: 14px; font-weight: 700; color: #fff;">${s.name}</div>
                 ${s.isPromo ? '<span class="service-promo-badge">🔥 DESTACADO / PROMO</span>' : ''}
               </div>
-              <div style="font-size: 11px; color: var(--text-muted);">${s.desc}</div>
-              <div style="font-size: 11px; color: var(--primary); font-weight: 600; margin-top: 2px;">⏱️ ${s.duration}</div>
+              <div style="font-size: 11px; color: var(--text-muted);">${s.description || s.desc || ''}</div>
+              <div style="font-size: 11px; color: var(--primary); font-weight: 600; margin-top: 2px;">⏱️ ${s.duration || '30 min'}</div>
             </div>
           </div>
           
@@ -1050,13 +1081,24 @@
         </div>
       `).join('');
     }
+    const renderAdminServicesEditor = renderServices;
 
-    function handleTogglePromo(serviceId) {
-      toggleServicePromo(shop.id, serviceId);
-      renderAdminDashboard();
+    async function handleTogglePromo(serviceId) {
+      const currentSlug = getAdminCurrentSlug();
+      let servs = getShopServicesList(currentSlug);
+      const s = servs.find(item => item.id === serviceId);
+      if (s) {
+        s.isPromo = !s.isPromo;
+        localStorage.setItem('services_' + currentSlug, JSON.stringify(servs));
+        if (shop) shop.services = servs;
+        if (typeof supabase !== 'undefined' && supabase && supabase.from) {
+          try { await supabase.from('shops').update({ services: servs }).eq('slug', currentSlug); } catch(e) {}
+        }
+      }
+      renderServices();
     }
 
-    function saveServicePrice(serviceId) {
+    async function saveServicePrice(serviceId) {
       const input = document.getElementById(`price-input-${serviceId}`);
       const newPrice = Number(input.value);
       if (isNaN(newPrice) || newPrice <= 0) {
@@ -1064,15 +1106,31 @@
         return;
       }
 
-      updateServicePrice(shop.id, serviceId, newPrice);
-      renderAdminDashboard();
+      const currentSlug = getAdminCurrentSlug();
+      let servs = getShopServicesList(currentSlug);
+      const s = servs.find(item => item.id === serviceId);
+      if (s) {
+        s.price = newPrice;
+        localStorage.setItem('services_' + currentSlug, JSON.stringify(servs));
+        if (shop) shop.services = servs;
+        if (typeof supabase !== 'undefined' && supabase && supabase.from) {
+          try { await supabase.from('shops').update({ services: servs }).eq('slug', currentSlug); } catch(e) {}
+        }
+      }
+      renderServices();
       alert(`¡Precio guardado! Ahora este corte cuesta $ ${newPrice} UYU en la app del cliente.`);
     }
 
-    function handleDeleteService(serviceId) {
+    async function handleDeleteService(serviceId) {
       if (confirm('¿Estás seguro de que deseas eliminar este corte de la lista?')) {
-        deleteService(shop.id, serviceId);
-        renderAdminDashboard();
+        const currentSlug = getAdminCurrentSlug();
+        let servs = getShopServicesList(currentSlug).filter(item => item.id !== serviceId);
+        localStorage.setItem('services_' + currentSlug, JSON.stringify(servs));
+        if (shop) shop.services = servs;
+        if (typeof supabase !== 'undefined' && supabase && supabase.from) {
+          try { await supabase.from('shops').update({ services: servs }).eq('slug', currentSlug); } catch(e) {}
+        }
+        renderServices();
       }
     }
 
@@ -1085,32 +1143,73 @@
       document.getElementById('addServiceModal').classList.remove('active');
     }
 
-    function handleCreateService(e) {
-      e.preventDefault();
-      const name = document.getElementById('newSrvName').value.trim();
-      const price = Number(document.getElementById('newSrvPrice').value);
-      const duration = document.getElementById('newSrvDuration').value.trim();
-      const desc = document.getElementById('newSrvDesc').value.trim();
-      const photo = document.getElementById('newSrvPhoto').value.trim() || DEFAULT_SERVICE_PHOTO;
-      const isPromo = document.getElementById('newSrvIsPromo').checked;
+    async function handleSaveService(e) {
+      if (e && e.preventDefault) e.preventDefault();
+      const currentSlug = getAdminCurrentSlug();
 
-      addNewService(shop.id, {
-        name: name,
-        price: price,
-        duration: duration,
-        desc: desc,
-        photo: photo,
-        isPromo: isPromo
-      });
+      const nameVal = (document.getElementById('serviceName')?.value || document.getElementById('newSrvName')?.value || '').trim();
+      const priceVal = Number(document.getElementById('servicePrice')?.value || document.getElementById('newSrvPrice')?.value || 0);
+      const durationVal = (document.getElementById('serviceDuration')?.value || document.getElementById('newSrvDuration')?.value || '30 min').trim();
+      const descVal = (document.getElementById('serviceDesc')?.value || document.getElementById('newSrvDesc')?.value || '').trim();
+      const imgVal = (document.getElementById('serviceImage')?.value || document.getElementById('newSrvPhoto')?.value || '').trim();
+      const isPromoVal = !!(document.getElementById('serviceIsPromo')?.checked || document.getElementById('newSrvIsPromo')?.checked);
 
+      const nuevoServicio = {
+        id: 'serv_' + Date.now(),
+        name: nameVal,
+        price: priceVal,
+        duration: durationVal,
+        description: descVal,
+        desc: descVal,
+        image: imgVal || DEFAULT_SERVICE_PHOTO,
+        photo: imgVal || DEFAULT_SERVICE_PHOTO,
+        isPromo: isPromoVal
+      };
+
+      // Guardado local inmediato
+      let servs = [];
+      try {
+        servs = JSON.parse(localStorage.getItem('services_' + currentSlug) || '[]');
+      } catch (err) {
+        servs = [];
+      }
+      if (!Array.isArray(servs) || servs.length === 0) {
+        servs = (shop && Array.isArray(shop.services) && shop.services.length > 0) ? [...shop.services] : [...(DEFAULT_SHOPS[0]?.services || [])];
+      }
+      servs.push(nuevoServicio);
+      localStorage.setItem('services_' + currentSlug, JSON.stringify(servs));
+
+      if (shop) shop.services = servs;
+      const allShops = getShops();
+      const targetShop = allShops.find(s => (s.slug && s.slug === currentSlug) || (s.id && s.id === currentSlug));
+      if (targetShop) {
+        targetShop.services = servs;
+        saveShops(allShops);
+      }
+
+      // Sincronización Supabase
+      if (typeof supabase !== 'undefined' && supabase && supabase.from) {
+        try {
+          await supabase.from('shops').update({ services: servs }).eq('slug', currentSlug);
+        } catch(err) {
+          console.warn("Fallo sync servicios Supabase:", err);
+        }
+      }
+
+      alert("¡Servicio guardado con éxito!");
       closeAddServiceModal();
-      document.getElementById('newSrvName').value = '';
-      document.getElementById('newSrvPrice').value = '';
-      document.getElementById('newSrvDesc').value = '';
-      document.getElementById('newSrvIsPromo').checked = false;
-      renderAdminDashboard();
-      alert(`¡Nuevo corte "${name}" agregado con éxito por $ ${price} UYU!`);
+      if (document.getElementById('serviceName')) document.getElementById('serviceName').value = '';
+      if (document.getElementById('newSrvName')) document.getElementById('newSrvName').value = '';
+      if (document.getElementById('servicePrice')) document.getElementById('servicePrice').value = '';
+      if (document.getElementById('newSrvPrice')) document.getElementById('newSrvPrice').value = '';
+      if (document.getElementById('serviceDesc')) document.getElementById('serviceDesc').value = '';
+      if (document.getElementById('newSrvDesc')) document.getElementById('newSrvDesc').value = '';
+      if (document.getElementById('serviceIsPromo')) document.getElementById('serviceIsPromo').checked = false;
+      if (document.getElementById('newSrvIsPromo')) document.getElementById('newSrvIsPromo').checked = false;
+
+      renderServices();
     }
+    const handleCreateService = handleSaveService;
 
     // GESTIÓN DEL CARTEL QR IMPRIMIBLE
     function openQrPosterModal() {
@@ -1423,13 +1522,13 @@
     }
 
     // =========================================================================
-    // GESTIÓN DE TIENDA Y PRODUCTOS DE BARBERÍA (FAIL-SAFE DUAL)
+    // GESTIÓN DE TIENDA Y PRODUCTOS DE BARBERÍA (FAIL-SAFE DUAL & RESILIENTE)
     // =========================================================================
 
     function getShopProductsList(slug) {
-      const cleanSlug = slug || (shop && (shop.slug || shop.id)) || 'casa-brava';
+      const currentSlug = slug || getAdminCurrentSlug();
       try {
-        const raw = localStorage.getItem(`shop_products_${cleanSlug}`);
+        const raw = localStorage.getItem('products_' + currentSlug) || localStorage.getItem('shop_products_' + currentSlug);
         if (raw) {
           const parsed = JSON.parse(raw);
           if (Array.isArray(parsed) && parsed.length > 0) return parsed;
@@ -1442,41 +1541,16 @@
       return (typeof DEFAULT_SHOPS !== 'undefined' && DEFAULT_SHOPS[0]?.products) ? DEFAULT_SHOPS[0].products : [];
     }
 
-    async function persistShopProducts(cleanSlug, productsArray) {
-      // 1. Guardar de inmediato en localStorage bajo la clave dedicada
-      localStorage.setItem(`shop_products_${cleanSlug}`, JSON.stringify(productsArray));
-
-      // 2. Actualizar también en el objeto shop en memoria y en las claves maestras
-      if (shop) {
-        shop.products = productsArray;
-      }
-      const allShops = getShops();
-      const targetShop = allShops.find(s => (s.slug && s.slug === cleanSlug) || (s.id && s.id === cleanSlug));
-      if (targetShop) {
-        targetShop.products = productsArray;
-        saveShops(allShops);
-      }
-
-      // 3. Sincronizar en segundo plano con Supabase en la columna products (JSONB)
-      try {
-        const client = window.supabaseClient || supabase;
-        if (client && typeof client.from === 'function') {
-          await client.from('shops').update({ products: productsArray }).eq('slug', cleanSlug);
-        }
-      } catch (cloudErr) {
-        console.warn("Aviso Supabase offline al actualizar productos:", cloudErr);
-      }
-    }
-
     function selectProductPreset(url, el) {
       document.querySelectorAll('#productPresetsGrid .image-preset-card').forEach(c => c.classList.remove('active'));
       if (el) el.classList.add('active');
-      const input = document.getElementById('newProdPhoto');
+      const input = document.getElementById('prodImage') || document.getElementById('newProdPhoto');
       if (input) input.value = url;
     }
 
     function onCustomProductPhotoInput() {
-      const val = (document.getElementById('newProdPhoto').value || '').trim();
+      const input = document.getElementById('prodImage') || document.getElementById('newProdPhoto');
+      const val = (input?.value || '').trim();
       document.querySelectorAll('#productPresetsGrid .image-preset-card').forEach(card => {
         const img = card.querySelector('img');
         if (img && img.src === val) {
@@ -1487,7 +1561,7 @@
       });
     }
 
-    function renderAdminProducts() {
+    function renderProducts() {
       const lockNotice = document.getElementById('storeModuleLockNotice');
       const btnNew = document.getElementById('btnNewProduct');
       const prodListEl = document.getElementById('adminProductsList');
@@ -1503,8 +1577,8 @@
       if (lockNotice) lockNotice.style.display = 'none';
       if (btnNew) btnNew.style.display = 'inline-block';
 
-      const cleanSlug = shop ? (shop.slug || shop.id) : 'casa-brava';
-      const products = getShopProductsList(cleanSlug);
+      const currentSlug = getAdminCurrentSlug();
+      const products = getShopProductsList(currentSlug);
 
       if (products.length === 0) {
         prodListEl.innerHTML = `<div style="text-align: center; color: var(--text-muted); padding: 20px;">No hay productos cargados en tu tienda. Haz clic en "+ Nuevo Producto".</div>`;
@@ -1514,7 +1588,7 @@
       prodListEl.innerHTML = products.map(p => `
         <div class="service-edit-row" style="opacity: ${p.active !== false ? '1' : '0.6'}; border-left: 3px solid ${p.active !== false ? 'var(--primary)' : 'var(--text-muted)'}; margin-bottom: 12px;">
           <div class="service-edit-header">
-            <img src="${p.photo || p.image || DEFAULT_PRODUCT_PHOTO}" 
+            <img src="${p.image || p.photo || DEFAULT_PRODUCT_PHOTO}" 
                  class="service-compact-thumb" 
                  alt="${p.name}" 
                  style="border-radius: 8px; width: 48px; height: 48px; object-fit: cover;"
@@ -1527,7 +1601,7 @@
                   ${p.active !== false ? '🟢 Disponible' : '⚪ Pausado'}
                 </span>
               </div>
-              <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">${p.desc || ''}</div>
+              <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">${p.description || p.desc || ''}</div>
             </div>
           </div>
 
@@ -1552,6 +1626,7 @@
         </div>
       `).join('');
     }
+    const renderAdminProducts = renderProducts;
 
     function openAddProductModal() {
       const firstPreset = document.querySelector('#productPresetsGrid .image-preset-card');
@@ -1562,36 +1637,69 @@
       document.getElementById('addProductModal').classList.remove('active');
     }
 
-    async function handleCreateProduct(e) {
-      e.preventDefault();
-      const name = document.getElementById('newProdName').value.trim();
-      const price = Number(document.getElementById('newProdPrice').value);
-      const desc = document.getElementById('newProdDesc').value.trim();
-      const photo = document.getElementById('newProdPhoto').value.trim() || DEFAULT_PRODUCT_PHOTO;
+    async function handleSaveProduct(e) {
+      if (e && e.preventDefault) e.preventDefault();
+      const currentSlug = getAdminCurrentSlug();
 
-      const cleanSlug = shop ? (shop.slug || shop.id) : 'casa-brava';
-      let currentProducts = [...getShopProductsList(cleanSlug)];
+      const nameVal = (document.getElementById('prodName')?.value || document.getElementById('newProdName')?.value || '').trim();
+      const priceVal = Number(document.getElementById('prodPrice')?.value || document.getElementById('newProdPrice')?.value || 0);
+      const descVal = (document.getElementById('prodDesc')?.value || document.getElementById('newProdDesc')?.value || '').trim();
+      const imgVal = (document.getElementById('prodImage')?.value || document.getElementById('newProdPhoto')?.value || '').trim();
 
-      const newProduct = {
-        id: 'p_' + Date.now(),
-        name: name,
-        price: price,
-        desc: desc,
-        photo: photo,
+      const nuevoProd = {
+        id: 'prod_' + Date.now(),
+        name: nameVal,
+        price: priceVal,
+        description: descVal,
+        desc: descVal,
+        image: imgVal || DEFAULT_PRODUCT_PHOTO,
+        photo: imgVal || DEFAULT_PRODUCT_PHOTO,
         active: true
       };
 
-      currentProducts.push(newProduct);
-      await persistShopProducts(cleanSlug, currentProducts);
+      // Guardado local inmediato obligatorio:
+      let prods = [];
+      try {
+        prods = JSON.parse(localStorage.getItem('products_' + currentSlug) || localStorage.getItem('shop_products_' + currentSlug) || '[]');
+      } catch (err) {
+        prods = [];
+      }
+      if (!Array.isArray(prods) || prods.length === 0) {
+        prods = (shop && Array.isArray(shop.products) && shop.products.length > 0) ? [...shop.products] : [...(DEFAULT_SHOPS[0]?.products || [])];
+      }
+      prods.push(nuevoProd);
+      localStorage.setItem('products_' + currentSlug, JSON.stringify(prods));
+      localStorage.setItem('shop_products_' + currentSlug, JSON.stringify(prods));
 
+      if (shop) shop.products = prods;
+      const allShops = getShops();
+      const targetShop = allShops.find(s => (s.slug && s.slug === currentSlug) || (s.id && s.id === currentSlug));
+      if (targetShop) {
+        targetShop.products = prods;
+        saveShops(allShops);
+      }
+
+      // Sincronización en segundo plano con Supabase:
+      if (typeof supabase !== 'undefined' && supabase && supabase.from) {
+        try {
+          await supabase.from('shops').update({ products: prods }).eq('slug', currentSlug);
+        } catch(err) {
+          console.warn("Fallo sync productos Supabase:", err);
+        }
+      }
+
+      alert("¡Producto guardado con éxito!");
       closeAddProductModal();
-      document.getElementById('newProdName').value = '';
-      document.getElementById('newProdPrice').value = '';
-      document.getElementById('newProdDesc').value = '';
-      
-      renderAdminProducts();
-      alert("Producto guardado con éxito.");
+      if (document.getElementById('prodName')) document.getElementById('prodName').value = '';
+      if (document.getElementById('newProdName')) document.getElementById('newProdName').value = '';
+      if (document.getElementById('prodPrice')) document.getElementById('prodPrice').value = '';
+      if (document.getElementById('newProdPrice')) document.getElementById('newProdPrice').value = '';
+      if (document.getElementById('prodDesc')) document.getElementById('prodDesc').value = '';
+      if (document.getElementById('newProdDesc')) document.getElementById('newProdDesc').value = '';
+
+      renderProducts();
     }
+    const handleCreateProduct = handleSaveProduct;
 
     async function saveProductPrice(productId) {
       const input = document.getElementById(`prod-price-input-${productId}`);
@@ -1600,36 +1708,51 @@
         alert('Por favor ingresa un precio válido en Pesos Uruguayos.');
         return;
       }
-      const cleanSlug = shop ? (shop.slug || shop.id) : 'casa-brava';
-      let currentProducts = [...getShopProductsList(cleanSlug)];
-      const prod = currentProducts.find(p => p.id === productId);
+      const currentSlug = getAdminCurrentSlug();
+      let prods = getShopProductsList(currentSlug);
+      const prod = prods.find(p => p.id === productId);
       if (prod) {
         prod.price = newPrice;
-        await persistShopProducts(cleanSlug, currentProducts);
+        localStorage.setItem('products_' + currentSlug, JSON.stringify(prods));
+        localStorage.setItem('shop_products_' + currentSlug, JSON.stringify(prods));
+        if (shop) shop.products = prods;
+        if (typeof supabase !== 'undefined' && supabase && supabase.from) {
+          try { await supabase.from('shops').update({ products: prods }).eq('slug', currentSlug); } catch(e) {}
+        }
       }
-      renderAdminProducts();
+      renderProducts();
       alert("Producto guardado con éxito.");
     }
 
     async function handleDeleteProduct(productId) {
       if (confirm('¿Estás seguro de que deseas eliminar este producto de la tienda?')) {
-        const cleanSlug = shop ? (shop.slug || shop.id) : 'casa-brava';
-        let currentProducts = getShopProductsList(cleanSlug).filter(p => p.id !== productId);
-        await persistShopProducts(cleanSlug, currentProducts);
-        renderAdminProducts();
+        const currentSlug = getAdminCurrentSlug();
+        let prods = getShopProductsList(currentSlug).filter(p => p.id !== productId);
+        localStorage.setItem('products_' + currentSlug, JSON.stringify(prods));
+        localStorage.setItem('shop_products_' + currentSlug, JSON.stringify(prods));
+        if (shop) shop.products = prods;
+        if (typeof supabase !== 'undefined' && supabase && supabase.from) {
+          try { await supabase.from('shops').update({ products: prods }).eq('slug', currentSlug); } catch(e) {}
+        }
+        renderProducts();
         alert("Producto eliminado con éxito.");
       }
     }
 
     async function handleToggleProductActive(productId) {
-      const cleanSlug = shop ? (shop.slug || shop.id) : 'casa-brava';
-      let currentProducts = [...getShopProductsList(cleanSlug)];
-      const prod = currentProducts.find(p => p.id === productId);
+      const currentSlug = getAdminCurrentSlug();
+      let prods = getShopProductsList(currentSlug);
+      const prod = prods.find(p => p.id === productId);
       if (prod) {
         prod.active = (prod.active === false);
-        await persistShopProducts(cleanSlug, currentProducts);
+        localStorage.setItem('products_' + currentSlug, JSON.stringify(prods));
+        localStorage.setItem('shop_products_' + currentSlug, JSON.stringify(prods));
+        if (shop) shop.products = prods;
+        if (typeof supabase !== 'undefined' && supabase && supabase.from) {
+          try { await supabase.from('shops').update({ products: prods }).eq('slug', currentSlug); } catch(e) {}
+        }
       }
-      renderAdminProducts();
+      renderProducts();
     }
 
     // =========================================================================
