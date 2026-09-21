@@ -529,10 +529,28 @@
           <label class="form-label">Descripción breve:</label>
           <input type="text" id="newProdDesc" class="form-input" placeholder="Ej: Efecto mate sin brillo, fijación 24hs" required>
         </div>
-        <div class="form-group">
-          <label class="form-label">Foto del producto (URL):</label>
-          <input type="url" id="newProdPhoto" class="form-input" value="https://images.unsplash.com/photo-1597854710119-a6a4220b33b9?w=160&q=80">
+        
+        <!-- Selector visual de fotos predefinidas para productos -->
+        <div class="image-presets-container">
+          <label class="image-preset-label">📷 Selecciona una foto para el producto:</label>
+          <div class="image-presets-grid" id="productPresetsGrid">
+            <div class="image-preset-card active" onclick="selectProductPreset('https://images.unsplash.com/photo-1597854710119-a5a84399e937?w=400&q=80', this)">
+              <img src="https://images.unsplash.com/photo-1597854710119-a5a84399e937?w=400&q=80" alt="Pomada / Cera" loading="lazy">
+              <div class="image-preset-title">Pomada / Cera</div>
+            </div>
+            <div class="image-preset-card" onclick="selectProductPreset('https://images.unsplash.com/photo-1608248597359-2169b9173a1a?w=400&q=80', this)">
+              <img src="https://images.unsplash.com/photo-1608248597359-2169b9173a1a?w=400&q=80" alt="Aceite para Barba" loading="lazy">
+              <div class="image-preset-title">Aceite para Barba</div>
+            </div>
+            <div class="image-preset-card" onclick="selectProductPreset('https://images.unsplash.com/photo-1535585209827-a15fcdbc4c2d?w=400&q=80', this)">
+              <img src="https://images.unsplash.com/photo-1535585209827-a15fcdbc4c2d?w=400&q=80" alt="Shampoo / Cuidado" loading="lazy">
+              <div class="image-preset-title">Shampoo / Cuidado</div>
+            </div>
+          </div>
+          <label class="form-label" style="font-size: 11px; margin-top: 6px;">O pega el enlace de tu propia foto (opcional):</label>
+          <input type="url" id="newProdPhoto" class="form-input" placeholder="https://..." value="https://images.unsplash.com/photo-1597854710119-a5a84399e937?w=400&q=80" oninput="onCustomProductPhotoInput()">
         </div>
+
         <div style="display: flex; gap: 8px; margin-top: 16px;">
           <button type="submit" class="btn btn-primary btn-block">Guardar Producto</button>
           <button type="button" class="btn-secondary" style="padding: 10px;" onclick="closeAddProductModal()">Cancelar</button>
@@ -565,10 +583,32 @@
           <label class="form-label">Descripción breve:</label>
           <input type="text" id="newSrvDesc" class="form-input" placeholder="Ej: Corte moderno con peinado" required>
         </div>
-        <div class="form-group">
-          <label class="form-label">Foto del corte (Opcional):</label>
-          <input type="url" id="newSrvPhoto" class="form-input" value="https://images.unsplash.com/photo-1622286342621-4bd786c2447c?w=160&q=80">
+
+        <!-- Selector visual de fotos predefinidas para cortes -->
+        <div class="image-presets-container">
+          <label class="image-preset-label">📷 Selecciona una foto para el corte:</label>
+          <div class="image-presets-grid" id="servicePresetsGrid">
+            <div class="image-preset-card active" onclick="selectServicePreset('https://images.unsplash.com/photo-1622286342621-4bd786c2447c?w=400&q=80', this)">
+              <img src="https://images.unsplash.com/photo-1622286342621-4bd786c2447c?w=400&q=80" alt="Fade / Degradé" loading="lazy">
+              <div class="image-preset-title">Fade / Degradé</div>
+            </div>
+            <div class="image-preset-card" onclick="selectServicePreset('https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=400&q=80', this)">
+              <img src="https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=400&q=80" alt="Barba / Perfilado" loading="lazy">
+              <div class="image-preset-title">Barba / Perfilado</div>
+            </div>
+            <div class="image-preset-card" onclick="selectServicePreset('https://images.unsplash.com/photo-1599351431202-1e0f0137899a?w=400&q=80', this)">
+              <img src="https://images.unsplash.com/photo-1599351431202-1e0f0137899a?w=400&q=80" alt="Clásico / Tijera" loading="lazy">
+              <div class="image-preset-title">Clásico / Tijera</div>
+            </div>
+            <div class="image-preset-card" onclick="selectServicePreset('https://images.unsplash.com/photo-1585747860715-2ba37e788b70?w=400&q=80', this)">
+              <img src="https://images.unsplash.com/photo-1585747860715-2ba37e788b70?w=400&q=80" alt="Combo Corte + Barba" loading="lazy">
+              <div class="image-preset-title">Combo Corte + Barba</div>
+            </div>
+          </div>
+          <label class="form-label" style="font-size: 11px; margin-top: 6px;">O pega el enlace de tu propia foto (opcional):</label>
+          <input type="url" id="newSrvPhoto" class="form-input" placeholder="https://..." value="https://images.unsplash.com/photo-1622286342621-4bd786c2447c?w=400&q=80" oninput="onCustomServicePhotoInput()">
         </div>
+
         <div class="form-group" style="display: flex; align-items: center; gap: 8px; margin-top: 10px; background: rgba(0, 255, 136, 0.08); padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border-gold);">
           <input type="checkbox" id="newSrvIsPromo" style="width: 18px; height: 18px; accent-color: var(--primary);">
           <label for="newSrvIsPromo" class="form-label" style="margin-bottom: 0; cursor: pointer; color: #fff; font-weight: 700;">
@@ -939,6 +979,28 @@
       updateShopFluorColor(shop.id, colorHex);
     }
 
+    const DEFAULT_SERVICE_PHOTO = 'https://images.unsplash.com/photo-1622286342621-4bd786c2447c?w=400&q=80';
+    const DEFAULT_PRODUCT_PHOTO = 'https://images.unsplash.com/photo-1597854710119-a5a84399e937?w=400&q=80';
+
+    function selectServicePreset(url, el) {
+      document.querySelectorAll('#servicePresetsGrid .image-preset-card').forEach(c => c.classList.remove('active'));
+      if (el) el.classList.add('active');
+      const input = document.getElementById('newSrvPhoto');
+      if (input) input.value = url;
+    }
+
+    function onCustomServicePhotoInput() {
+      const val = (document.getElementById('newSrvPhoto').value || '').trim();
+      document.querySelectorAll('#servicePresetsGrid .image-preset-card').forEach(card => {
+        const img = card.querySelector('img');
+        if (img && img.src === val) {
+          card.classList.add('active');
+        } else {
+          card.classList.remove('active');
+        }
+      });
+    }
+
     function renderAdminServicesEditor() {
       const srvList = document.getElementById('adminServicesList');
       if (!shop.services || shop.services.length === 0) {
@@ -949,7 +1011,11 @@
       srvList.innerHTML = shop.services.map(s => `
         <div class="service-edit-row ${s.isPromo ? 'is-promo' : ''}">
           <div class="service-edit-header">
-            <img src="${s.photo}" class="service-compact-thumb" alt="${s.name}">
+            <img src="${s.photo || s.image || DEFAULT_SERVICE_PHOTO}" 
+                 class="service-compact-thumb" 
+                 alt="${s.name}"
+                 loading="lazy"
+                 onerror="this.src='${DEFAULT_SERVICE_PHOTO}'">
             <div style="flex: 1; min-width: 0;">
               <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
                 <div style="font-size: 14px; font-weight: 700; color: #fff;">${s.name}</div>
@@ -1011,6 +1077,8 @@
     }
 
     function openAddServiceModal() {
+      const firstPreset = document.querySelector('#servicePresetsGrid .image-preset-card');
+      if (firstPreset) selectServicePreset(DEFAULT_SERVICE_PHOTO, firstPreset);
       document.getElementById('addServiceModal').classList.add('active');
     }
     function closeAddServiceModal() {
@@ -1023,7 +1091,7 @@
       const price = Number(document.getElementById('newSrvPrice').value);
       const duration = document.getElementById('newSrvDuration').value.trim();
       const desc = document.getElementById('newSrvDesc').value.trim();
-      const photo = document.getElementById('newSrvPhoto').value.trim();
+      const photo = document.getElementById('newSrvPhoto').value.trim() || DEFAULT_SERVICE_PHOTO;
       const isPromo = document.getElementById('newSrvIsPromo').checked;
 
       addNewService(shop.id, {
@@ -1031,13 +1099,14 @@
         price: price,
         duration: duration,
         desc: desc,
-        photo: photo || 'https://images.unsplash.com/photo-1622286342621-4bd786c2447c?w=160&q=80',
+        photo: photo,
         isPromo: isPromo
       });
 
       closeAddServiceModal();
       document.getElementById('newSrvName').value = '';
       document.getElementById('newSrvPrice').value = '';
+      document.getElementById('newSrvDesc').value = '';
       document.getElementById('newSrvIsPromo').checked = false;
       renderAdminDashboard();
       alert(`¡Nuevo corte "${name}" agregado con éxito por $ ${price} UYU!`);
@@ -1399,6 +1468,25 @@
       }
     }
 
+    function selectProductPreset(url, el) {
+      document.querySelectorAll('#productPresetsGrid .image-preset-card').forEach(c => c.classList.remove('active'));
+      if (el) el.classList.add('active');
+      const input = document.getElementById('newProdPhoto');
+      if (input) input.value = url;
+    }
+
+    function onCustomProductPhotoInput() {
+      const val = (document.getElementById('newProdPhoto').value || '').trim();
+      document.querySelectorAll('#productPresetsGrid .image-preset-card').forEach(card => {
+        const img = card.querySelector('img');
+        if (img && img.src === val) {
+          card.classList.add('active');
+        } else {
+          card.classList.remove('active');
+        }
+      });
+    }
+
     function renderAdminProducts() {
       const lockNotice = document.getElementById('storeModuleLockNotice');
       const btnNew = document.getElementById('btnNewProduct');
@@ -1426,7 +1514,12 @@
       prodListEl.innerHTML = products.map(p => `
         <div class="service-edit-row" style="opacity: ${p.active !== false ? '1' : '0.6'}; border-left: 3px solid ${p.active !== false ? 'var(--primary)' : 'var(--text-muted)'}; margin-bottom: 12px;">
           <div class="service-edit-header">
-            <img src="${p.photo || 'https://images.unsplash.com/photo-1597854710119-a6a4220b33b9?w=160&q=80'}" class="service-compact-thumb" alt="${p.name}" style="border-radius: 8px; width: 48px; height: 48px; object-fit: cover;">
+            <img src="${p.photo || p.image || DEFAULT_PRODUCT_PHOTO}" 
+                 class="service-compact-thumb" 
+                 alt="${p.name}" 
+                 style="border-radius: 8px; width: 48px; height: 48px; object-fit: cover;"
+                 loading="lazy"
+                 onerror="this.src='${DEFAULT_PRODUCT_PHOTO}'">
             <div style="flex: 1; min-width: 0;">
               <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
                 <div style="font-size: 14px; font-weight: 700; color: #fff;">${p.name}</div>
@@ -1461,6 +1554,8 @@
     }
 
     function openAddProductModal() {
+      const firstPreset = document.querySelector('#productPresetsGrid .image-preset-card');
+      if (firstPreset) selectProductPreset(DEFAULT_PRODUCT_PHOTO, firstPreset);
       document.getElementById('addProductModal').classList.add('active');
     }
     function closeAddProductModal() {
@@ -1472,7 +1567,7 @@
       const name = document.getElementById('newProdName').value.trim();
       const price = Number(document.getElementById('newProdPrice').value);
       const desc = document.getElementById('newProdDesc').value.trim();
-      const photo = document.getElementById('newProdPhoto').value.trim();
+      const photo = document.getElementById('newProdPhoto').value.trim() || DEFAULT_PRODUCT_PHOTO;
 
       const cleanSlug = shop ? (shop.slug || shop.id) : 'casa-brava';
       let currentProducts = [...getShopProductsList(cleanSlug)];
@@ -1482,7 +1577,7 @@
         name: name,
         price: price,
         desc: desc,
-        photo: photo || 'https://images.unsplash.com/photo-1597854710119-a6a4220b33b9?w=160&q=80',
+        photo: photo,
         active: true
       };
 

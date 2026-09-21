@@ -151,7 +151,7 @@ const DEFAULT_SHOPS = [
         price: 450, 
         duration: '30 min', 
         desc: 'Degradé milimétrico a navaja, lavado y peinado profesional.',
-        photo: 'https://images.unsplash.com/photo-1622286342621-4bd786c2447c?w=160&q=80',
+        photo: 'https://images.unsplash.com/photo-1622286342621-4bd786c2447c?w=400&q=80',
         isPromo: false
       },
       { 
@@ -160,7 +160,7 @@ const DEFAULT_SHOPS = [
         price: 350, 
         duration: '30 min', 
         desc: 'Toalla caliente, aceites esenciales, perfilado a navaja e hidratación.',
-        photo: 'https://images.unsplash.com/photo-1621605815971-fbc98d665033?w=160&q=80',
+        photo: 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=400&q=80',
         isPromo: false
       },
       { 
@@ -169,16 +169,16 @@ const DEFAULT_SHOPS = [
         price: 700, 
         duration: '60 min', 
         desc: 'La experiencia completa: corte de autor, barba esculpida y toalla caliente.',
-        photo: 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=160&q=80',
+        photo: 'https://images.unsplash.com/photo-1585747860715-2ba37e788b70?w=400&q=80',
         isPromo: true
       },
       { 
         id: 's4', 
-        name: 'Diseño & Perfilado de Cejas', 
+        name: 'Diseño & Perfilado Clásico', 
         price: 200, 
         duration: '15 min', 
-        desc: 'Limpieza y alineación masculina con acabado limpio y natural.',
-        photo: 'https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=160&q=80',
+        desc: 'Limpieza, contornos a tijera/navaja con acabado limpio y natural.',
+        photo: 'https://images.unsplash.com/photo-1599351431202-1e0f0137899a?w=400&q=80',
         isPromo: false
       }
     ],
@@ -190,7 +190,7 @@ const DEFAULT_SHOPS = [
         name: 'Pomada Matte Gold (Fijación Fuerte)', 
         price: 350, 
         desc: 'Efecto seco sin brillo, ideal para degradés modernos y peinados texturados.',
-        photo: 'https://images.unsplash.com/photo-1597854710119-a6a4220b33b9?w=160&q=80',
+        photo: 'https://images.unsplash.com/photo-1597854710119-a5a84399e937?w=400&q=80',
         active: true
       },
       { 
@@ -198,15 +198,15 @@ const DEFAULT_SHOPS = [
         name: 'Aceite Esencial para Barba y Bigote', 
         price: 320, 
         desc: 'Hidratación profunda con aroma a cedro y madera noble. Suaviza el vello.',
-        photo: 'https://images.unsplash.com/photo-1626806787461-102c1bfaaea1?w=160&q=80',
+        photo: 'https://images.unsplash.com/photo-1608248597359-2169b9173a1a?w=400&q=80',
         active: true
       },
       { 
         id: 'p3', 
-        name: 'Cera en Polvo Volumen & Textura', 
+        name: 'Shampoo & Cuidado Capilar', 
         price: 400, 
-        desc: 'Aporta volumen instantáneo en la raíz con sensación ligera y mate.',
-        photo: 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=160&q=80',
+        desc: 'Limpieza profunda y cuidado diario para cabello y cuero cabelludo.',
+        photo: 'https://images.unsplash.com/photo-1535585209827-a15fcdbc4c2d?w=400&q=80',
         active: true
       }
     ]
@@ -457,9 +457,9 @@ function getShops() {
 
     if (!shop.products || shop.products.length === 0) {
       shop.products = [
-        { id: 'p1', name: 'Pomada Matte Gold (Fijación Fuerte)', price: 350, desc: 'Efecto seco sin brillo, ideal para degradés modernos y peinados texturados.', photo: 'https://images.unsplash.com/photo-1597854710119-a6a4220b33b9?w=160&q=80', active: true },
-        { id: 'p2', name: 'Aceite Esencial para Barba y Bigote', price: 320, desc: 'Hidratación profunda con aroma a cedro y madera noble. Suaviza el vello.', photo: 'https://images.unsplash.com/photo-1626806787461-102c1bfaaea1?w=160&q=80', active: true },
-        { id: 'p3', name: 'Cera en Polvo Volumen & Textura', price: 400, desc: 'Aporta volumen instantáneo en la raíz con sensación ligera y mate.', photo: 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=160&q=80', active: true }
+        { id: 'p1', name: 'Pomada Matte Gold (Fijación Fuerte)', price: 350, desc: 'Efecto seco sin brillo, ideal para degradés modernos y peinados texturados.', photo: 'https://images.unsplash.com/photo-1597854710119-a5a84399e937?w=400&q=80', active: true },
+        { id: 'p2', name: 'Aceite Esencial para Barba y Bigote', price: 320, desc: 'Hidratación profunda con aroma a cedro y madera noble. Suaviza el vello.', photo: 'https://images.unsplash.com/photo-1608248597359-2169b9173a1a?w=400&q=80', active: true },
+        { id: 'p3', name: 'Shampoo & Cuidado Capilar', price: 400, desc: 'Limpieza profunda y cuidado diario para cabello y cuero cabelludo.', photo: 'https://images.unsplash.com/photo-1535585209827-a15fcdbc4c2d?w=400&q=80', active: true }
       ];
     }
 
@@ -954,13 +954,13 @@ function createNewBarberShopAccount(shopData) {
       { id: 'b-' + Date.now(), name: 'Barbero Titular', photo: 'https://images.unsplash.com/photo-1583863788434-e58a36330cf0?w=200&q=80', role: 'Barbero Titular • Fade', commissionRate: 0.50, daysOff: [0], phone: shopData.phone }
     ],
     services: [
-      { id: 's-1', name: 'Corte Clásico & Fade', price: 450, duration: '30 min', desc: 'Corte profesional con degradé y peinado', photo: 'https://images.unsplash.com/photo-1622286342621-4bd786c2447c?w=160&q=80', isPromo: false },
-      { id: 's-2', name: 'Ritual Barba Tradicional', price: 350, duration: '30 min', desc: 'Perfilado a navaja y toalla caliente', photo: 'https://images.unsplash.com/photo-1621605815971-fbc98d665033?w=160&q=80', isPromo: false },
-      { id: 's-3', name: 'Combo Completo (Pelo + Barba)', price: 700, duration: '60 min', desc: 'Experiencia completa corte y barba', photo: 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=160&q=80', isPromo: true }
+      { id: 's-1', name: 'Corte Clásico & Fade', price: 450, duration: '30 min', desc: 'Corte profesional con degradé y peinado', photo: 'https://images.unsplash.com/photo-1622286342621-4bd786c2447c?w=400&q=80', isPromo: false },
+      { id: 's-2', name: 'Ritual Barba Tradicional', price: 350, duration: '30 min', desc: 'Perfilado a navaja y toalla caliente', photo: 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=400&q=80', isPromo: false },
+      { id: 's-3', name: 'Combo Completo (Pelo + Barba)', price: 700, duration: '60 min', desc: 'Experiencia completa corte y barba', photo: 'https://images.unsplash.com/photo-1585747860715-2ba37e788b70?w=400&q=80', isPromo: true }
     ],
     products: [
-      { id: 'p-1', name: 'Pomada Matte Gold (Fijación Fuerte)', price: 350, desc: 'Fijación fuerte y acabado natural mate', photo: 'https://images.unsplash.com/photo-1597854710119-a6a4220b33b9?w=160&q=80', active: true },
-      { id: 'p-2', name: 'Aceite Esencial para Barba', price: 320, desc: 'Hidratación con aroma a cedro noble', photo: 'https://images.unsplash.com/photo-1626806787461-102c1bfaaea1?w=160&q=80', active: true }
+      { id: 'p-1', name: 'Pomada Matte Gold (Fijación Fuerte)', price: 350, desc: 'Fijación fuerte y acabado natural mate', photo: 'https://images.unsplash.com/photo-1597854710119-a5a84399e937?w=400&q=80', active: true },
+      { id: 'p-2', name: 'Aceite Esencial para Barba', price: 320, desc: 'Hidratación con aroma a cedro noble', photo: 'https://images.unsplash.com/photo-1608248597359-2169b9173a1a?w=400&q=80', active: true }
     ]
   };
 

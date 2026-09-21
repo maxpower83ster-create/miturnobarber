@@ -207,7 +207,11 @@
       const servicesGrid = document.getElementById('servicesGrid');
       servicesGrid.innerHTML = sortedServices.map((s, idx) => `
         <div class="service-compact-card ${idx === 0 ? 'selected' : ''} ${s.isPromo ? 'is-promo' : ''}" onclick="selectServiceItem('${s.id}')" id="srv-${s.id}">
-          <img src="${s.photo}" alt="${s.name}" class="service-compact-thumb">
+          <img src="${s.photo || s.image || 'https://images.unsplash.com/photo-1622286342621-4bd786c2447c?w=400&q=80'}" 
+               alt="${s.name}" 
+               class="service-compact-thumb" 
+               loading="lazy" 
+               onerror="this.src='https://images.unsplash.com/photo-1622286342621-4bd786c2447c?w=400&q=80'">
           <div class="service-compact-info">
             ${s.isPromo ? '<div class="service-promo-badge">🔥 PROMO DESTACADA</div>' : ''}
             <div class="service-compact-name">${s.name}</div>
@@ -225,7 +229,11 @@
         const dayOffText = (b.daysOff && b.daysOff.length > 0) ? ` • Libre: ${DAY_NAMES[b.daysOff[0]]}s` : '';
         return `
           <div class="barber-compact-card ${idx === 0 ? 'selected' : ''}" onclick="selectBarberItem('${b.id}')" id="barber-${b.id}">
-            <img src="${b.photo}" alt="${b.name}" class="barber-compact-avatar">
+            <img src="${b.photo || 'https://images.unsplash.com/photo-1583863788434-e58a36330cf0?w=200&q=80'}" 
+                 alt="${b.name}" 
+                 class="barber-compact-avatar" 
+                 loading="lazy" 
+                 onerror="this.src='https://images.unsplash.com/photo-1583863788434-e58a36330cf0?w=200&q=80'">
             <div>
               <div class="barber-compact-name">${b.name}</div>
               <div class="barber-compact-role">${b.role}${dayOffText}</div>
@@ -254,7 +262,12 @@
         if (activeProds.length > 0) {
           productsGrid.innerHTML = activeProds.map(p => `
             <div class="service-compact-card product-pick-card" id="prod-${p.id}" onclick="selectProductItem('${p.id}')" style="cursor: pointer; margin-bottom: 8px;">
-              <img src="${p.photo || 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=200&q=80'}" alt="${p.name}" class="service-compact-thumb" style="border-radius: 6px;">
+              <img src="${p.photo || p.image || 'https://images.unsplash.com/photo-1597854710119-a5a84399e937?w=400&q=80'}" 
+                   alt="${p.name}" 
+                   class="service-compact-thumb" 
+                   style="border-radius: 8px;" 
+                   loading="lazy" 
+                   onerror="this.src='https://images.unsplash.com/photo-1622286342621-4bd786c2447c?w=400&q=80'">
               <div class="service-compact-info">
                 <div class="service-compact-name">${p.name}</div>
                 <div class="service-compact-desc">${p.desc || 'Producto premium de barbería'}</div>
