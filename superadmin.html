@@ -288,6 +288,15 @@
 
   <script src="app.js"></script>
   <script>
+    // Inicialización explícita del cliente oficial de Supabase
+    const SUPABASE_URL_SA = 'https://tgxdllqnsspohfubqps.supabase.co';
+    const SUPABASE_KEY_SA = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRneGRsbHFuc3Nwb2hmdWJxcHMiLCJyb2xlIjoiYW5vbiIsImlhdCI6MTc2MDk5MTYwMSwiZXhwIjoyMDc2NTY3NjAxfQ.sB-B-aLTY8uRt5PT6fHEJeI71VbCyy3oB_cYh15m4';
+    
+    if (window.supabase && typeof window.supabase.createClient === 'function') {
+      window.supabaseClient = window.supabase.createClient(SUPABASE_URL_SA, SUPABASE_KEY_SA);
+      supabase = window.supabaseClient;
+    }
+
     // Verificación limpia de sesión de Super Admin (sin rebotes ni bucles de redirección)
     function checkSuperAdminAccess() {
       let isSuperAdmin = false;
@@ -376,20 +385,14 @@
 
     async function cargarBarberiasDesdeSupabase() {
       let remoteShops = [];
+      const client = window.supabaseClient || supabase;
       try {
-        if (supabase && typeof supabase.from === 'function') {
-          const { data, error } = await supabase.from('shops').select('*').neq('role', 'superadmin').order('created_at', { ascending: false });
+        if (client && typeof client.from === 'function') {
+          const { data, error } = await client.from('shops').select('*').neq('role', 'superadmin').order('created_at', { ascending: false });
           if (error) {
             console.error('Error al cargar barberías de Supabase:', error);
           } else if (data && Array.isArray(data)) {
             remoteShops = data.map(mapShopFromSupabase);
-            localStorage.setItem(STORAGE_KEYS.SHOPS, JSON.stringify(remoteShops));
-            return remoteShops;
-          }
-        } else if (typeof supabaseFetch === 'function') {
-          const res = await supabaseFetch('shops?role=neq.superadmin&select=*&order=created_at.desc');
-          if (res && res.data && Array.isArray(res.data)) {
-            remoteShops = res.data.map(mapShopFromSupabase);
             localStorage.setItem(STORAGE_KEYS.SHOPS, JSON.stringify(remoteShops));
             return remoteShops;
           }
@@ -561,8 +564,6 @@
         if (supabase && typeof supabase.from === 'function') {
           const { error } = await supabase.from('shops').update({ status: newStatus }).eq('id', shopId);
           if (error) console.error('Detalle error Supabase (update status):', error);
-        } else if (typeof supabaseFetch === 'function') {
-          await supabaseFetch(`shops?id=eq.${shopId}`, 'PATCH', { status: newStatus });
         }
         await renderSuperAdmin();
       }
@@ -620,14 +621,6 @@
           console.error('Detalle error Supabase (update plan):', error);
           alert('Detalle al actualizar en Supabase: ' + error.message);
         }
-      } else if (typeof supabaseFetch === 'function') {
-        const res = await supabaseFetch(`shops?id=eq.${shopId}`, 'PATCH', {
-          plan: plan,
-          monthly_fee: fee
-        });
-        if (res && res.error) {
-          alert('Detalle al actualizar en Supabase: ' + res.error.message);
-        }
       }
 
       closeEditPlanModal();
@@ -646,10 +639,6 @@
         if (supabase && typeof supabase.from === 'function') {
           const { error } = await supabase.from('shops').update({ status: 'active' }).eq('id', shopId);
           if (error) console.error('Detalle error Supabase (activate):', error);
-        } else if (typeof supabaseFetch === 'function') {
-          await supabaseFetch(`shops?id=eq.${shopId}`, 'PATCH', {
-            status: 'active'
-          });
         }
         await renderSuperAdmin();
         alert(`✅ Barbería "${s.name}" activada como cliente permanente.`);
@@ -672,11 +661,6 @@
         if (supabase && typeof supabase.from === 'function') {
           const { error } = await supabase.from('shops').update({ status: 'trial', trial_ends_at: s.trialEndsAt }).eq('id', shopId);
           if (error) console.error('Detalle error Supabase (extend trial):', error);
-        } else if (typeof supabaseFetch === 'function') {
-          await supabaseFetch(`shops?id=eq.${shopId}`, 'PATCH', {
-            status: 'trial',
-            trial_ends_at: s.trialEndsAt
-          });
         }
         await renderSuperAdmin();
         alert(`🎉 Período demo de "${s.name}" extendido por ${days} días más.`);
@@ -769,24 +753,17 @@
       // DIAGNÓSTICO Y VISIBILIDAD DE OBJETO A INSERTAR
       console.log("OBJETO A INSERTAR EN SHOPS:", nuevaBarberia);
 
-      // Asegurar inicialización de supabase client si aún no existe
-      if (!supabase && window.supabase && typeof window.supabase.createClient === 'function') {
-        supabase = window.supabase.createClient(SUPABASE_CONFIG.url, SUPABASE_CONFIG.anonKey);
+      // Asegurar cliente de Supabase
+      const client = window.supabaseClient || supabase;
+      if (!client) {
+        alert("Error: Cliente Supabase no disponible.");
+        return;
       }
 
       let insertError = null;
-      let insertData = null;
-
       try {
-        if (supabase && typeof supabase.from === 'function') {
-          const { data, error } = await supabase.from('shops').insert([ nuevaBarberia ]).select();
-          insertData = data;
-          insertError = error;
-        } else {
-          const res = await supabaseFetch('shops', 'POST', nuevaBarberia, { 'Prefer': 'return=representation' });
-          if (res && res.error) insertError = res.error;
-          else if (res && res.data) insertData = res.data;
-        }
+        const { data, error } = await client.from('shops').insert([ nuevaBarberia ]).select();
+        insertError = error;
       } catch (err) {
         insertError = err;
       }
