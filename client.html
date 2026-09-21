@@ -241,8 +241,16 @@
       const upsellingEnabled = currentShop.promotions?.upselling?.enabled !== false;
 
       if (currentShop.hasStore !== false && upsellingEnabled) {
-        storeCard.style.display = 'block';
-        const activeProds = (currentShop.products || []).filter(p => p.active !== false);
+        let productsPool = currentShop.products || [];
+        try {
+          const rawProds = localStorage.getItem(`shop_products_${currentShop.slug || currentShop.id}`);
+          if (rawProds) {
+            const parsedProds = JSON.parse(rawProds);
+            if (Array.isArray(parsedProds) && parsedProds.length > 0) productsPool = parsedProds;
+          }
+        } catch (e) {}
+
+        const activeProds = productsPool.filter(p => p.active !== false);
         if (activeProds.length > 0) {
           productsGrid.innerHTML = activeProds.map(p => `
             <div class="service-compact-card product-pick-card" id="prod-${p.id}" onclick="selectProductItem('${p.id}')" style="cursor: pointer; margin-bottom: 8px;">

@@ -1046,16 +1046,28 @@
     // GESTIÓN DEL CARTEL QR IMPRIMIBLE
     function openQrPosterModal() {
       const modal = document.getElementById('qrPosterModal');
-      const url = getShopBookingUrl(shop.id);
-      document.getElementById('qrShopTitle').innerText = shop.name;
-      document.getElementById('qrShopSub').innerText = shop.subtitle || 'BARBERÍA & CLUB MASCULINO';
-      document.getElementById('qrShopAddress').innerText = shop.address || 'Salto, Uruguay';
+      const slug = shop ? (shop.slug || shop.id || 'casa-brava') : 'casa-brava';
+      const bookingUrl = getShopBookingUrl(slug);
       
-      const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=320x320&data=${encodeURIComponent(url)}&margin=10`;
-      document.getElementById('qrPosterImage').src = qrApiUrl;
-      document.getElementById('qrPosterContent').style.borderColor = selectedBrandColor;
+      document.getElementById('qrShopTitle').innerText = shop ? shop.name : 'Barbería';
+      document.getElementById('qrShopSub').innerText = shop ? (shop.subtitle || 'BARBERÍA & CLUB MASCULINO') : 'BARBERÍA';
+      document.getElementById('qrShopAddress').innerText = shop ? (shop.address || 'Salto, Uruguay') : 'Salto, Uruguay';
       
-      modal.classList.add('active');
+      const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=320x320&data=${encodeURIComponent(bookingUrl)}&margin=10`;
+      const qrImg = document.getElementById('qrPosterImage');
+      if (qrImg) {
+        qrImg.src = qrApiUrl;
+        qrImg.onerror = function() {
+          this.src = `https://quickchart.io/qr?text=${encodeURIComponent(bookingUrl)}&size=320`;
+        };
+      }
+      
+      const content = document.getElementById('qrPosterContent');
+      if (content && typeof selectedBrandColor !== 'undefined') {
+        content.style.borderColor = selectedBrandColor;
+      }
+      
+      if (modal) modal.classList.add('active');
     }
 
     function closeQrPosterModal() {
@@ -1342,46 +1354,91 @@
     }
 
     // =========================================================================
-    // GESTIÓN DE TIENDA Y PRODUCTOS DE BARBERÍA
+    // GESTIÓN DE TIENDA Y PRODUCTOS DE BARBERÍA (FAIL-SAFE DUAL)
     // =========================================================================
+
+    function getShopProductsList(slug) {
+      const cleanSlug = slug || (shop && (shop.slug || shop.id)) || 'casa-brava';
+      try {
+        const raw = localStorage.getItem(`shop_products_${cleanSlug}`);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        }
+      } catch (e) {}
+
+      if (shop && Array.isArray(shop.products) && shop.products.length > 0) {
+        return shop.products;
+      }
+      return (typeof DEFAULT_SHOPS !== 'undefined' && DEFAULT_SHOPS[0]?.products) ? DEFAULT_SHOPS[0].products : [];
+    }
+
+    async function persistShopProducts(cleanSlug, productsArray) {
+      // 1. Guardar de inmediato en localStorage bajo la clave dedicada
+      localStorage.setItem(`shop_products_${cleanSlug}`, JSON.stringify(productsArray));
+
+      // 2. Actualizar también en el objeto shop en memoria y en las claves maestras
+      if (shop) {
+        shop.products = productsArray;
+      }
+      const allShops = getShops();
+      const targetShop = allShops.find(s => (s.slug && s.slug === cleanSlug) || (s.id && s.id === cleanSlug));
+      if (targetShop) {
+        targetShop.products = productsArray;
+        saveShops(allShops);
+      }
+
+      // 3. Sincronizar en segundo plano con Supabase en la columna products (JSONB)
+      try {
+        const client = window.supabaseClient || supabase;
+        if (client && typeof client.from === 'function') {
+          await client.from('shops').update({ products: productsArray }).eq('slug', cleanSlug);
+        }
+      } catch (cloudErr) {
+        console.warn("Aviso Supabase offline al actualizar productos:", cloudErr);
+      }
+    }
 
     function renderAdminProducts() {
       const lockNotice = document.getElementById('storeModuleLockNotice');
       const btnNew = document.getElementById('btnNewProduct');
       const prodListEl = document.getElementById('adminProductsList');
+      if (!prodListEl) return;
 
-      if (shop.hasStore === false) {
-        lockNotice.style.display = 'block';
-        btnNew.style.display = 'none';
+      if (shop && shop.hasStore === false) {
+        if (lockNotice) lockNotice.style.display = 'block';
+        if (btnNew) btnNew.style.display = 'none';
         prodListEl.innerHTML = '';
         return;
       }
 
-      lockNotice.style.display = 'none';
-      btnNew.style.display = 'inline-block';
+      if (lockNotice) lockNotice.style.display = 'none';
+      if (btnNew) btnNew.style.display = 'inline-block';
 
-      const products = shop.products || [];
+      const cleanSlug = shop ? (shop.slug || shop.id) : 'casa-brava';
+      const products = getShopProductsList(cleanSlug);
+
       if (products.length === 0) {
         prodListEl.innerHTML = `<div style="text-align: center; color: var(--text-muted); padding: 20px;">No hay productos cargados en tu tienda. Haz clic en "+ Nuevo Producto".</div>`;
         return;
       }
 
       prodListEl.innerHTML = products.map(p => `
-        <div class="service-edit-row" style="opacity: ${p.active ? '1' : '0.6'}; border-left: 3px solid ${p.active ? 'var(--primary)' : 'var(--text-muted)'};">
+        <div class="service-edit-row" style="opacity: ${p.active !== false ? '1' : '0.6'}; border-left: 3px solid ${p.active !== false ? 'var(--primary)' : 'var(--text-muted)'}; margin-bottom: 12px;">
           <div class="service-edit-header">
-            <img src="${p.photo}" class="service-compact-thumb" alt="${p.name}" style="border-radius: 8px;">
+            <img src="${p.photo || 'https://images.unsplash.com/photo-1597854710119-a6a4220b33b9?w=160&q=80'}" class="service-compact-thumb" alt="${p.name}" style="border-radius: 8px; width: 48px; height: 48px; object-fit: cover;">
             <div style="flex: 1; min-width: 0;">
               <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
                 <div style="font-size: 14px; font-weight: 700; color: #fff;">${p.name}</div>
-                <span class="badge ${p.active ? 'badge-primary' : 'badge-secondary'}" style="font-size: 10px;">
-                  ${p.active ? '🟢 Disponible' : '⚪ Pausado'}
+                <span class="badge ${p.active !== false ? 'badge-primary' : 'badge-secondary'}" style="font-size: 10px;">
+                  ${p.active !== false ? '🟢 Disponible' : '⚪ Pausado'}
                 </span>
               </div>
-              <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">${p.desc}</div>
+              <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">${p.desc || ''}</div>
             </div>
           </div>
 
-          <div class="service-edit-actions">
+          <div class="service-edit-actions" style="margin-top: 10px;">
             <div class="price-input-box">
               <span style="font-size: 12px; color: var(--text-muted);">Precio ($):</span>
               <input type="number" id="prod-price-input-${p.id}" value="${p.price}">
@@ -1392,7 +1449,7 @@
 
             <div style="display: flex; gap: 6px;">
               <button class="btn btn-secondary" style="padding: 6px 10px; font-size: 12px;" onclick="handleToggleProductActive('${p.id}')">
-                ${p.active ? 'Pausar' : 'Activar'}
+                ${p.active !== false ? 'Pausar' : 'Activar'}
               </button>
               <button class="btn btn-secondary" style="color: #ff5555; padding: 6px 10px; font-size: 12px;" onclick="handleDeleteProduct('${p.id}')">
                 🗑️
@@ -1410,51 +1467,74 @@
       document.getElementById('addProductModal').classList.remove('active');
     }
 
-    function handleCreateProduct(e) {
+    async function handleCreateProduct(e) {
       e.preventDefault();
       const name = document.getElementById('newProdName').value.trim();
       const price = Number(document.getElementById('newProdPrice').value);
       const desc = document.getElementById('newProdDesc').value.trim();
       const photo = document.getElementById('newProdPhoto').value.trim();
 
-      addNewProduct(shop.id, {
+      const cleanSlug = shop ? (shop.slug || shop.id) : 'casa-brava';
+      let currentProducts = [...getShopProductsList(cleanSlug)];
+
+      const newProduct = {
+        id: 'p_' + Date.now(),
         name: name,
         price: price,
         desc: desc,
         photo: photo || 'https://images.unsplash.com/photo-1597854710119-a6a4220b33b9?w=160&q=80',
         active: true
-      });
+      };
+
+      currentProducts.push(newProduct);
+      await persistShopProducts(cleanSlug, currentProducts);
 
       closeAddProductModal();
       document.getElementById('newProdName').value = '';
       document.getElementById('newProdPrice').value = '';
       document.getElementById('newProdDesc').value = '';
-      renderAdminDashboard();
-      alert(`¡Producto "${name}" agregado a tu tienda por $ ${price} UYU!`);
+      
+      renderAdminProducts();
+      alert("Producto guardado con éxito.");
     }
 
-    function saveProductPrice(productId) {
+    async function saveProductPrice(productId) {
       const input = document.getElementById(`prod-price-input-${productId}`);
       const newPrice = Number(input.value);
       if (isNaN(newPrice) || newPrice <= 0) {
         alert('Por favor ingresa un precio válido en Pesos Uruguayos.');
         return;
       }
-      updateProductPrice(shop.id, productId, newPrice);
-      renderAdminDashboard();
-      alert(`¡Precio guardado! Ahora este producto cuesta $ ${newPrice} UYU.`);
+      const cleanSlug = shop ? (shop.slug || shop.id) : 'casa-brava';
+      let currentProducts = [...getShopProductsList(cleanSlug)];
+      const prod = currentProducts.find(p => p.id === productId);
+      if (prod) {
+        prod.price = newPrice;
+        await persistShopProducts(cleanSlug, currentProducts);
+      }
+      renderAdminProducts();
+      alert("Producto guardado con éxito.");
     }
 
-    function handleDeleteProduct(productId) {
+    async function handleDeleteProduct(productId) {
       if (confirm('¿Estás seguro de que deseas eliminar este producto de la tienda?')) {
-        deleteProduct(shop.id, productId);
-        renderAdminDashboard();
+        const cleanSlug = shop ? (shop.slug || shop.id) : 'casa-brava';
+        let currentProducts = getShopProductsList(cleanSlug).filter(p => p.id !== productId);
+        await persistShopProducts(cleanSlug, currentProducts);
+        renderAdminProducts();
+        alert("Producto eliminado con éxito.");
       }
     }
 
-    function handleToggleProductActive(productId) {
-      toggleProductActive(shop.id, productId);
-      renderAdminDashboard();
+    async function handleToggleProductActive(productId) {
+      const cleanSlug = shop ? (shop.slug || shop.id) : 'casa-brava';
+      let currentProducts = [...getShopProductsList(cleanSlug)];
+      const prod = currentProducts.find(p => p.id === productId);
+      if (prod) {
+        prod.active = (prod.active === false);
+        await persistShopProducts(cleanSlug, currentProducts);
+      }
+      renderAdminProducts();
     }
 
     // =========================================================================

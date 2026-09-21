@@ -995,20 +995,24 @@ function updateShopAccountStatus(shopId, newStatus, extraTrialDays = 0) {
 // =========================================================================
 
 function getShopBookingUrl(shopId) {
-  const origin = window.location.origin;
-  const path = window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/') + 1);
-  return `${origin}${path}client.html?b=${encodeURIComponent(shopId || 'casa-brava')}`;
+  const cleanId = (shopId || 'casa-brava').toLowerCase().trim();
+  const base = (window.location.hostname && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1')
+    ? `${window.location.origin}${window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/') + 1)}`
+    : 'https://miturnobarber.com/';
+  return `${base}client.html?b=${encodeURIComponent(cleanId)}`;
 }
 
 function getShopAdminUrl(shopId) {
-  const origin = window.location.origin;
-  const path = window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/') + 1);
-  return `${origin}${path}admin.html?shop=${encodeURIComponent(shopId || 'casa-brava')}`;
+  const cleanId = (shopId || 'casa-brava').toLowerCase().trim();
+  const base = (window.location.hostname && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1')
+    ? `${window.location.origin}${window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/') + 1)}`
+    : 'https://miturnobarber.com/';
+  return `${base}admin.html?b=${encodeURIComponent(cleanId)}`;
 }
 
 function getShopQrCodeUrl(shopId, size = 300) {
   const bookingUrl = getShopBookingUrl(shopId);
-  return `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(bookingUrl)}&format=png&margin=10`;
+  return `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(bookingUrl)}&margin=10`;
 }
 
 // =========================================================================
@@ -1017,13 +1021,24 @@ function getShopQrCodeUrl(shopId, size = 300) {
 
 function addNewProduct(shopId, productData) {
   const shops = getShops();
-  const shop = shops.find(s => s.id === shopId);
+  const shop = shops.find(s => s.id === shopId || s.slug === shopId);
   if (shop) {
     if (!shop.products) shop.products = [];
     productData.id = 'p-' + Date.now();
     productData.active = productData.active !== undefined ? productData.active : true;
     shop.products.push(productData);
     saveShops(shops);
+    
+    const cleanSlug = shop.slug || shop.id;
+    localStorage.setItem(`shop_products_${cleanSlug}`, JSON.stringify(shop.products));
+
+    if (window.supabaseClient || supabase) {
+      const client = window.supabaseClient || supabase;
+      try {
+        client.from('shops').update({ products: shop.products }).eq('slug', cleanSlug).then(() => {}).catch(() => {});
+      } catch (e) {}
+    }
+
     return productData;
   }
   return null;
@@ -1031,12 +1046,22 @@ function addNewProduct(shopId, productData) {
 
 function updateProductPrice(shopId, productId, newPrice) {
   const shops = getShops();
-  const shop = shops.find(s => s.id === shopId);
+  const shop = shops.find(s => s.id === shopId || s.slug === shopId);
   if (shop && shop.products) {
     const prod = shop.products.find(p => p.id === productId);
     if (prod) {
       prod.price = Number(newPrice);
       saveShops(shops);
+
+      const cleanSlug = shop.slug || shop.id;
+      localStorage.setItem(`shop_products_${cleanSlug}`, JSON.stringify(shop.products));
+
+      if (window.supabaseClient || supabase) {
+        const client = window.supabaseClient || supabase;
+        try {
+          client.from('shops').update({ products: shop.products }).eq('slug', cleanSlug).then(() => {}).catch(() => {});
+        } catch (e) {}
+      }
       return true;
     }
   }
@@ -1045,10 +1070,20 @@ function updateProductPrice(shopId, productId, newPrice) {
 
 function deleteProduct(shopId, productId) {
   const shops = getShops();
-  const shop = shops.find(s => s.id === shopId);
+  const shop = shops.find(s => s.id === shopId || s.slug === shopId);
   if (shop && shop.products) {
     shop.products = shop.products.filter(p => p.id !== productId);
     saveShops(shops);
+
+    const cleanSlug = shop.slug || shop.id;
+    localStorage.setItem(`shop_products_${cleanSlug}`, JSON.stringify(shop.products));
+
+    if (window.supabaseClient || supabase) {
+      const client = window.supabaseClient || supabase;
+      try {
+        client.from('shops').update({ products: shop.products }).eq('slug', cleanSlug).then(() => {}).catch(() => {});
+      } catch (e) {}
+    }
     return true;
   }
   return false;
@@ -1056,12 +1091,22 @@ function deleteProduct(shopId, productId) {
 
 function toggleProductActive(shopId, productId) {
   const shops = getShops();
-  const shop = shops.find(s => s.id === shopId);
+  const shop = shops.find(s => s.id === shopId || s.slug === shopId);
   if (shop && shop.products) {
     const prod = shop.products.find(p => p.id === productId);
     if (prod) {
       prod.active = !prod.active;
       saveShops(shops);
+
+      const cleanSlug = shop.slug || shop.id;
+      localStorage.setItem(`shop_products_${cleanSlug}`, JSON.stringify(shop.products));
+
+      if (window.supabaseClient || supabase) {
+        const client = window.supabaseClient || supabase;
+        try {
+          client.from('shops').update({ products: shop.products }).eq('slug', cleanSlug).then(() => {}).catch(() => {});
+        } catch (e) {}
+      }
       return prod.active;
     }
   }

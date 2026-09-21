@@ -584,19 +584,35 @@
     }
 
     function openQrModal(shopId, encodedName) {
-      const name = decodeURIComponent(encodedName);
-      const qrUrl = (typeof getShopQrCodeUrl === 'function') ? getShopQrCodeUrl(shopId, 320) : '';
-      const bookingUrl = (typeof getShopBookingUrl === 'function') ? getShopBookingUrl(shopId) : `client.html?b=${shopId}`;
+      const name = decodeURIComponent(encodedName || 'Barbería');
+      const cleanSlug = (shopId || 'casa-brava').trim();
+      const bookingUrl = (typeof getShopBookingUrl === 'function') ? getShopBookingUrl(cleanSlug) : `https://miturnobarber.com/client.html?b=${cleanSlug}`;
+      const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(bookingUrl)}&margin=10`;
 
-      document.getElementById('qrModalShopName').innerText = name;
-      document.getElementById('qrModalImage').src = qrUrl;
-      document.getElementById('qrModalLinkText').innerText = bookingUrl;
-      document.getElementById('qrModalDownloadBtn').href = qrUrl;
-      document.getElementById('qrModalOverlay').classList.add('active');
+      const nameEl = document.getElementById('qrModalShopName');
+      const imgEl = document.getElementById('qrModalImage');
+      const linkEl = document.getElementById('qrModalLinkText');
+      const dlBtn = document.getElementById('qrModalDownloadBtn');
+      const overlay = document.getElementById('qrModalOverlay');
+
+      if (nameEl) nameEl.innerText = name;
+      if (imgEl) {
+        imgEl.src = qrUrl;
+        imgEl.onerror = function() {
+          this.src = `https://quickchart.io/qr?text=${encodeURIComponent(bookingUrl)}&size=300`;
+        };
+      }
+      if (linkEl) linkEl.innerText = bookingUrl;
+      if (dlBtn) {
+        dlBtn.href = qrUrl;
+        dlBtn.target = '_blank';
+      }
+      if (overlay) overlay.classList.add('active');
     }
 
     function closeQrModal() {
-      document.getElementById('qrModalOverlay').classList.remove('active');
+      const overlay = document.getElementById('qrModalOverlay');
+      if (overlay) overlay.classList.remove('active');
     }
 
     async function toggleShopStatus(shopId) {
