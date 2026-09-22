@@ -732,6 +732,10 @@
 
   <script src="app.js"></script>
   <script>
+    // Constantes globales de fotos por defecto (inicializadas en el tope del script)
+    const DEFAULT_SERVICE_PHOTO = 'https://images.unsplash.com/photo-1599351431202-1e0f0137899a?w=500&q=80';
+    const DEFAULT_PRODUCT_PHOTO = 'https://images.unsplash.com/photo-1597854710119-a5a84399e937?w=500&q=80';
+
     let shop = null;
     let currentBgImage = '';
 
@@ -978,9 +982,6 @@
       updateLivePreview();
       updateShopFluorColor(shop.id, colorHex);
     }
-
-    const DEFAULT_SERVICE_PHOTO = 'https://images.unsplash.com/photo-1599351431202-1e0f0137899a?w=500&q=80';
-    const DEFAULT_PRODUCT_PHOTO = 'https://images.unsplash.com/photo-1597854710119-a5a84399e937?w=500&q=80';
 
     function getAdminCurrentSlug() {
       const urlParams = new URLSearchParams(window.location.search);
