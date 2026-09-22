@@ -1147,7 +1147,7 @@
       if (e && e.preventDefault) e.preventDefault();
       try {
         const DEFAULT_IMG = 'https://images.unsplash.com/photo-1599351431202-1e0f0137899a?w=500&q=80';
-        const currentSlug = new URLSearchParams(window.location.search).get('b') || (typeof getAdminCurrentSlug === 'function' ? getAdminCurrentSlug() : 'casa-brava');
+        const currentSlug = new URLSearchParams(window.location.search).get('b') || getAdminCurrentSlug();
 
         const nameVal = (document.getElementById('serviceName')?.value || document.getElementById('newSrvName')?.value || '').trim();
         const priceVal = Number(document.getElementById('servicePrice')?.value || document.getElementById('newSrvPrice')?.value || 0);
@@ -1689,7 +1689,7 @@
       if (e && e.preventDefault) e.preventDefault();
       try {
         const DEFAULT_IMG = 'https://images.unsplash.com/photo-1597854710119-a5a84399e937?w=500&q=80';
-        const currentSlug = new URLSearchParams(window.location.search).get('b') || (typeof getAdminCurrentSlug === 'function' ? getAdminCurrentSlug() : 'casa-brava');
+        const currentSlug = new URLSearchParams(window.location.search).get('b') || getAdminCurrentSlug();
 
         const nameVal = (document.getElementById('prodName')?.value || document.getElementById('newProdName')?.value || '').trim();
         const priceVal = Number(document.getElementById('prodPrice')?.value || document.getElementById('newProdPrice')?.value || 0);
